@@ -8,9 +8,11 @@ import React from 'react'
 import { render } from 'react-dom'
 
 import Application from './Application'
+import MasonryApp from './MasonryApp'
 
 render(
-  <Application />,
+    //<Application/>,
+    <MasonryApp />,
   document.getElementById('root')
 )
 

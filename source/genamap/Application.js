@@ -163,6 +163,8 @@ export default class Application extends PureComponent {
             console.log(this.axis)
             this.axis.invalidateCellSizeAfterRender(this.axis._renderedColumnStartIndex,this.axis._renderedRowStartIndex)
         }
+
+        this.axis.forceUpdate()
     }
 
 
@@ -185,7 +187,7 @@ export default class Application extends PureComponent {
         if (this.state.zoomindex > 50) {
             return 10
         }
-                return 30
+        return 30
         
     }
 
