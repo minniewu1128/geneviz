@@ -65,7 +65,8 @@ export default class Masonry extends PureComponent {
 
     this.state = {
       isScrolling: false,
-      scrollTop: 0
+      scrollTop: 0,
+      cellCount: props.cellCount
     }
 
     this._debounceResetIsScrollingCallback = this._debounceResetIsScrollingCallback.bind(this)
@@ -77,6 +78,11 @@ export default class Masonry extends PureComponent {
     this._positionCache = new PositionCache()
     this.forceUpdate()
   }
+
+  //Hack Hack : TODO : Fix later
+   updateCellCount (cellCount) {
+      this.setState({cellCount:cellCount},this.clearCellPositions())
+   }
 
   // HACK This method signature was intended for Grid
   invalidateCellSizeAfterRender ({ rowIndex: index }) {
@@ -132,7 +138,7 @@ export default class Masonry extends PureComponent {
   render () {
     const {
       autoHeight,
-      cellCount,
+      //cellCount,
       cellMeasurerCache,
       cellRenderer,
       className,
@@ -148,7 +154,8 @@ export default class Masonry extends PureComponent {
 
     const {
       isScrolling,
-      scrollTop
+      scrollTop,
+      cellCount
     } = this.state
 
     const children = []
@@ -158,7 +165,7 @@ export default class Masonry extends PureComponent {
     const shortestColumnSize = this._positionCache.shortestColumnSize
     const measuredCellCount = this._positionCache.count
 
-    // We need to measure more cells before layout
+      // We need to measure more cells before layout
     if (
       shortestColumnSize < scrollTop + height + overscanByPixels &&
       measuredCellCount < cellCount
