@@ -9,12 +9,12 @@ import { render } from 'react-dom'
 
 import Application from './Application'
 import MasonryApp from './MasonryApp'
-import CorrelationGrid from './CorrelationGrid'
+//import CorrelationGrid from './CorrelationGrid'
 
 render(
-    //<Application/>,
+    <Application/>,
     //<MasonryApp />,
-    <CorrelationGrid/>
+    //<CorrelationGrid/>
   document.getElementById('root')
 )
 

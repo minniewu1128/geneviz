@@ -43,25 +43,27 @@ export default class Application extends PureComponent {
 
         const list = []
 
-        for (var i = 0; i < 23; i++) {
+        for (var i = 0; i < 25; i++) {
             list.push(i)
         }
 
+        const zoominfo = {"start":1,"end":3000000000}
+
 
         this.state = {
-            columnCount: 23,
+            columnCount: 25,
             height: 60,
             overscanColumnCount: 0,
             overscanRowCount: 1,
             rowHeight: 50,
-            rowCount: 1,
+            rowCount: 29,
             scrollToColumn: undefined,
             scrollToRow: undefined,
             useDynamicRowHeight: false,
             list:Immutable.List(intial),
             zoomindex:100,
             zoomamount:10,
-            zoomStack: []
+            zoomStack: [zoominfo]
         }
 
         this._cellRenderer = this._cellRenderer.bind(this)
@@ -164,7 +166,7 @@ export default class Application extends PureComponent {
                                     className={styles.BodyGrid}
                                     columnWidth={this._getColumnWidth}
                                     columnCount={columnCount}
-                                    height={100}
+                                    height={500}
                                     noContentRenderer={this._noContentRenderer}
                                     overscanColumnCount={overscanColumnCount}
                                     overscanRowCount={overscanRowCount}
@@ -188,39 +190,60 @@ export default class Application extends PureComponent {
 
     _updateZoom({event}) {
 
-        this.state.zoomindex = this.state.zoomindex + event.deltaY / 10
-
         let zoomamt  = this.state.zoomamount + (event.wheelDeltaY /10 )
-        this.setState({'zoomamount':zoomamt})
-
         var current = event.clientX / this._getColumnWidth()
 
-        console.log(current)
 
-
-        if (zoomamt > 100){
+        if (zoomamt > 100) {
             zoomamt = 0
             let start = this.state.list.get(Math.floor(current))
-            let end = this.state.list.get(Math.floor(current)+1)
-
-            console.log("Current Cell")
-            console.log(Math.floor(current))
-
-            console.log("Start End")
-            console.log(start)
-            console.log(end)
+            let end = this.state.list.get(Math.floor(current) + 1)
 
             let items = [];
-            for (let i = start; i < (end); i = i + ((end - start)/50)){
+            for (let i = start; i < (end); i = i + ((end - start) / 50)) {
                 items.push(Math.floor(i));
             }
 
-            this.setState({"list":Immutable.List(list)},function(){}.bind(this))
+            const zstack = this.state.zoomStack
+            zstack.push({"start": start, "end": end})
 
+
+
+            this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0}, function () {
+
+                this._onColumnCountChange((items.length))
+                this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
+                this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 0})
+                this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
+                this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
+                this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
+
+            }.bind(this))
+        } else if (zoomamt < - 100){
+            //
+            // let zstack = this.state.zoomStack
+            // zstack.pop()
+            //
+            //
+            //
+            // let start = zstack
+            // let end = this.state.list.get(Math.floor(current) + 1)
+            //
+            // let items = [];
+            // for (let i = start; i < (end); i = i + ((end - start) / 50)) {
+            //     items.push(Math.floor(i));
+            // }
+            //
+            // const zstack = this.state.zoomStack
+            // zstack.push({"start": start, "end": end})
+
+
+        }
+        else{
+            this.setState({'zoomamount':zoomamt})
         }
 
 
-            const list = []
 
         // for (var i = 0; i < Math.floor(Math.random() * (10000 - 1000 + 1)) ; i++) {
         //     list.push(Math.floor(Math.random() * (10000 - 1 + 1)))
@@ -231,11 +254,7 @@ export default class Application extends PureComponent {
         //     this._onColumnCountChange({"target":{"value":(list.length)}});
         // }.bind(this))
 
-        this.axis.recomputeGridSize({ columnIndex: 0, rowIndex: 0 })
-        this.axis.recomputeGridSize({ columnIndex: 1, rowIndex: 0 })
-        this.axis.recomputeGridSize({ columnIndex: 2, rowIndex: 0 })
-        this.axis.recomputeGridSize({ columnIndex: 3, rowIndex: 0 })
-        this.axis.recomputeGridSize({ columnIndex: 4, rowIndex: 0 })
+
 
 
 
@@ -269,10 +288,10 @@ export default class Application extends PureComponent {
         //     return 10
         // }
 
-        if (this.state.zoomStack.length == 0 ){
-            return 80
+        if (this.state.zoomStack.length == 1 ){
+            return 60
         }
-        else if (this.state.zoomStack.length == 1 ) {
+        else if (this.state.zoomStack.length == 2 ) {
             return 50
         }
         return 30
@@ -308,16 +327,31 @@ export default class Application extends PureComponent {
             [styles.centeredCell]: columnIndex > 2
         })
 
-        style["fontSize"] = "x-small"
+        style = {
+            ...style,
+            fontSize: "x-small"
+        }
+
 
         //Format based on length of number
+        const millions =  Math.floor(datum / 1000000 % 10)
         const tensMillions =  Math.floor(datum / 10000000 % 10)
         const hundredMillions =  Math.floor(datum / 100000000 % 10)
         const billions =  Math.floor(datum / 1000000000 % 10)
 
-        let label = billions + "." + hundredMillions + tensMillions +  "B"
 
+        //Compute the resolution for the scale
+        let zstate = this.state.zoomStack[this.state.zoomStack.length - 1]
+        const sbil =  Math.floor(zstate.start / 1000000000 % 10)
+        const endbil =  Math.floor(zstate.end / 1000000000 % 10)
 
+        let label = billions + "." + hundredMillions + tensMillions + millions
+        // if(sbil > 0 || endbil > 0){
+        //     label = billions + "." + hundredMillions + tensMillions +  "B"
+        // }
+        // else{
+        //     label = hundredMillions + tensMillions + millions  +"M"
+        // }
 
 
         return (
@@ -361,9 +395,8 @@ export default class Application extends PureComponent {
         })
     }
 
-    _onColumnCountChange(event) {
-        const columnCount = parseInt(event.target.value, 10) || 0
-
+    _onColumnCountChange(columnCount) {
+        //const columnCount = parseInt(event.target.value, 10) || 0
         this.setState({columnCount})
     }
 
