@@ -69,6 +69,19 @@ app.get('/', function (req, res, next) {
     else res.sendFile(__dirname + "/view/" + "index.htm");
 })
 
+app.get('/data', function (req, res) {
+        var response = {
+            start: req.query.start,
+            end: req.query.end,
+            zoom: req.query.zoom
+        };
+           
+        api.getRange(response.start, response.end, response.zoom).then(function(result) {
+                res.send(result);
+        });
+})
+
+
 /* 
  * Go to localhost:3000/get-data to load CSV to MongoDB 
  * The webpage will just say "Loading data" but the db should be filling the db

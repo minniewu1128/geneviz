@@ -92,7 +92,8 @@ exports.getRange = function (start, end, factor=1) {
 
                         // generate index range for each aggregate range
                         var startIndex = start + offset * factor;
-                        obj.index = (startIndex).toString() + "-" + (startIndex+factor).toString();
+                        obj.index.start = (startIndex)
+                        obj.index.end = (startIndex+factor-1)
 
                         // generate array of max data values
                         for (var j = 0; j < col.data.length; j++) {
