@@ -178,7 +178,7 @@ export default class Application extends PureComponent {
                     )}
                 </CustomWindowScroller>
             </ContentBox>
-    
+
         )
     }
 
