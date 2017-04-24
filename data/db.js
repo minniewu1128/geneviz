@@ -1,3 +1,8 @@
+/*
+ * db.js
+ * Connects to the db (named test in this case)
+ */
+
 var mongoose = require('mongoose');
 
 mongoose.connect('mongodb://127.0.0.1/test');
