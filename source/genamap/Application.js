@@ -9,6 +9,30 @@ import CustomWindowScroller from '../CustomWindowScroller'
 import cn from 'classnames'
 import styles from './axis.css'
 
+let intial =   [143478261,
+    286956522,
+    430434783,
+    573913044,
+    717391305,
+    860869566,
+    1004347827,
+    1147826088,
+    1291304349,
+    1434782610,
+    1578260871,
+    1721739132,
+    1865217393,
+    2008695654,
+    2152173915,
+    2295652176,
+    2439130437,
+    2582608698,
+    2726086959,
+    2869565220,
+    3013043481,
+    3156521742,
+    3300000003,]
+
 export default class Application extends PureComponent {
     static contextTypes = {
         list: PropTypes.instanceOf(Immutable.List).isRequired
@@ -19,14 +43,14 @@ export default class Application extends PureComponent {
 
         const list = []
 
-        for (var i = 0; i < 1000; i++) {
+        for (var i = 0; i < 23; i++) {
             list.push(i)
         }
 
 
         this.state = {
-            columnCount: 1000,
-            height: 100,
+            columnCount: 23,
+            height: 60,
             overscanColumnCount: 0,
             overscanRowCount: 1,
             rowHeight: 50,
@@ -34,8 +58,10 @@ export default class Application extends PureComponent {
             scrollToColumn: undefined,
             scrollToRow: undefined,
             useDynamicRowHeight: false,
-            list:Immutable.List(list),
-            zoomindex:0
+            list:Immutable.List(intial),
+            zoomindex:100,
+            zoomamount:10,
+            zoomStack: []
         }
 
         this._cellRenderer = this._cellRenderer.bind(this)
@@ -50,6 +76,7 @@ export default class Application extends PureComponent {
         this._renderBodyCell = this._renderBodyCell.bind(this)
         this._renderLeftSideCell = this._renderLeftSideCell.bind(this)
         this._getDatum = this._getDatum.bind(this)
+        this._on
     }
 
     render() {
@@ -122,6 +149,11 @@ export default class Application extends PureComponent {
                     />
                 </InputRow>
 
+                <div style={{border:"1px solid #ccc!important"}}>
+                    <div style={{backgroundColor:'#bbb',height:"24px",width: Math.abs(this.state.zoomamount) + "%"}}></div>
+                </div>
+
+
                 <CustomWindowScroller onScroll={this._updateZoom.bind(this)}>
                     {({ height, isScrolling, scrollTop }) => (
                         <AutoSizer disableHeight>
@@ -146,6 +178,7 @@ export default class Application extends PureComponent {
                     )}
                 </CustomWindowScroller>
             </ContentBox>
+    
         )
     }
 
@@ -154,38 +187,93 @@ export default class Application extends PureComponent {
     }
 
     _updateZoom({event}) {
-        if (event.deltaY > 50 ){
-            console.log(event)
-            this.state.zoomindex = this.state.zoomindex + 1
-            this.axis.invalidateCellSizeAfterRender(this.axis._renderedColumnStartIndex,this.axis._renderedRowStartIndex)
-        }else if (event.deltaY < - 50 ){
-            this.state.zoomindex = this.state.zoomindex - 1
-            console.log(this.axis)
-            this.axis.invalidateCellSizeAfterRender(this.axis._renderedColumnStartIndex,this.axis._renderedRowStartIndex)
+
+        this.state.zoomindex = this.state.zoomindex + event.deltaY / 10
+
+        let zoomamt  = this.state.zoomamount + (event.wheelDeltaY /10 )
+        this.setState({'zoomamount':zoomamt})
+
+        var current = event.clientX / this._getColumnWidth()
+
+        console.log(current)
+
+
+        if (zoomamt > 100){
+            zoomamt = 0
+            let start = this.state.list.get(Math.floor(current))
+            let end = this.state.list.get(Math.floor(current)+1)
+
+            console.log("Current Cell")
+            console.log(Math.floor(current))
+
+            console.log("Start End")
+            console.log(start)
+            console.log(end)
+
+            let items = [];
+            for (let i = start; i < (end); i = i + ((end - start)/50)){
+                items.push(Math.floor(i));
+            }
+
+            this.setState({"list":Immutable.List(list)},function(){}.bind(this))
+
         }
 
-        this.axis.forceUpdate()
+
+            const list = []
+
+        // for (var i = 0; i < Math.floor(Math.random() * (10000 - 1000 + 1)) ; i++) {
+        //     list.push(Math.floor(Math.random() * (10000 - 1 + 1)))
+        // }
+        //
+        // console.log(list.length)
+        // this.setState({"list":Immutable.List(list)},function(){
+        //     this._onColumnCountChange({"target":{"value":(list.length)}});
+        // }.bind(this))
+
+        this.axis.recomputeGridSize({ columnIndex: 0, rowIndex: 0 })
+        this.axis.recomputeGridSize({ columnIndex: 1, rowIndex: 0 })
+        this.axis.recomputeGridSize({ columnIndex: 2, rowIndex: 0 })
+        this.axis.recomputeGridSize({ columnIndex: 3, rowIndex: 0 })
+        this.axis.recomputeGridSize({ columnIndex: 4, rowIndex: 0 })
+
+
+
+        //We want to update data
+        //this.axis.forceUpdate()
     }
 
 
     _cellRenderer({columnIndex, key, rowIndex, style}) {
 
-        if (columnIndex === 0) {
-            return this._renderLeftSideCell({columnIndex, key, rowIndex, style})
-        } else {
+        // console.log(key)
+        // console.log(style)
+
+        // if (columnIndex === 0) {
+        //     return this._renderLeftSideCell({columnIndex, key, rowIndex, style})
+        // } else {
             return this._renderBodyCell({columnIndex, key, rowIndex, style})
-        }
+        //}
     }
 
-    _getColumnWidth({index}) {
+    _getColumnWidth() {
 
-        console.log(this.state.zoomindex)
 
-        if (this.state.zoomindex < 0) {
+        // return this.state.zoomindex
+        // return Math.floor(Math.random() * (500 - 40)) + 40
+        //
+        // if (this.state.zoomindex < 0) {
+        //     return 80
+        // }
+        // if (this.state.zoomindex > 50) {
+        //     return 10
+        // }
+
+        if (this.state.zoomStack.length == 0 ){
             return 80
         }
-        if (this.state.zoomindex > 50) {
-            return 10
+        else if (this.state.zoomStack.length == 1 ) {
+            return 50
         }
         return 30
         
@@ -213,25 +301,24 @@ export default class Application extends PureComponent {
 
     _renderBodyCell({columnIndex, key, rowIndex, style}) {
         const rowClass = this._getRowClassName(rowIndex)
-        const datum = this._getDatum(rowIndex)
+        const datum = this._getDatum(columnIndex)
 
-        let content
-
-        switch (columnIndex) {
-            case 1:
-                content = datum.name
-                break
-            case 2:
-                content = datum.random
-                break
-            default:
-                content = `${columnIndex} Kb`
-                break
-        }
 
         const classNames = cn(rowClass, styles.cell, {
             [styles.centeredCell]: columnIndex > 2
         })
+
+        style["fontSize"] = "x-small"
+
+        //Format based on length of number
+        const tensMillions =  Math.floor(datum / 10000000 % 10)
+        const hundredMillions =  Math.floor(datum / 100000000 % 10)
+        const billions =  Math.floor(datum / 1000000000 % 10)
+
+        let label = billions + "." + hundredMillions + tensMillions +  "B"
+
+
+
 
         return (
             <div
@@ -239,7 +326,7 @@ export default class Application extends PureComponent {
                 key={key}
                 style={style}
             >
-                {content}
+                {label}
             </div>
         )
     }

@@ -37,7 +37,13 @@
 .cell {
     border-right: 1px solid #e0e0e0;
     border-bottom: 1px solid #e0e0e0;
+    background-color: #409890;
+    transition-property: all;
+    transition-duration: .5s;
+    transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
 }
+
+
 .headerCell {
     font-weight: bold;
     border-right: 1px solid #e0e0e0;
@@ -65,3 +71,4 @@
     font-size: 1em;
     color: #bdbdbd;
 }
+

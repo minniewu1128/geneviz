@@ -3,6 +3,8 @@ import React, { PureComponent } from 'react'
 import cn from 'classnames'
 import PositionCache from './PositionCache'
 
+
+
 /**
  * Specifies the number of miliseconds during which to disable pointer events while a scroll is in progress.
  * This improves performance and makes scrolling smoother.
@@ -79,10 +81,15 @@ export default class Masonry extends PureComponent {
     this.forceUpdate()
   }
 
-  //Hack Hack : TODO : Fix later
+  //AJ: TODO : Fix later
    updateCellCount (cellCount) {
       this.setState({cellCount:cellCount},this.clearCellPositions())
    }
+
+   updateCellsCss (){
+
+   }
+
 
   // HACK This method signature was intended for Grid
   invalidateCellSizeAfterRender ({ rowIndex: index }) {
@@ -264,7 +271,7 @@ export default class Masonry extends PureComponent {
             position: 'relative'
           }}
         >
-          {children}
+            {children}
         </div>
       </div>
     )

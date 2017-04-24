@@ -8,7 +8,32 @@ import AutoSizer from '../AutoSizer'
 import CustomWindowScroller from '../CustomWindowScroller'
 import createCellPositioner from '../Masonry/createCellPositioner'
 import Masonry from '../Masonry'
-import styles from '../Masonry/Masonry.example.css'
+import styles from './axis.css'
+
+let intial =   [143478261,
+    286956522,
+    430434783,
+    573913044,
+    717391305,
+    860869566,
+    1004347827,
+    1147826088,
+    1291304349,
+    1434782610,
+    1578260871,
+    1721739132,
+    1865217393,
+    2008695654,
+    2152173915,
+    2295652176,
+    2439130437,
+    2582608698,
+    2726086959,
+    2869565220,
+    3013043481,
+    3156521742,
+    3300000003,]
+
 
 export default class MasonryApp extends PureComponent {
     static contextTypes = {
@@ -30,11 +55,13 @@ export default class MasonryApp extends PureComponent {
 
         this.state = {
             columnCount:23,
-            columnWidth:30,
-            height: 300,
-            gutterSize: 10,
+            columnWidth:55,
+            height: 200,
+            gutterSize:3,
             windowScrollerEnabled: true,
-            list: Immutable.List([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23])
+            list: Immutable.List(intial),
+            zoomamount:10,
+            zoomstack:[]
         }
 
         this._cellRenderer = this._cellRenderer.bind(this)
@@ -109,8 +136,13 @@ export default class MasonryApp extends PureComponent {
                         }}
                         value={gutterSize}
                     />
+
                 </InputRow>
 
+
+                <div style={{border:"1px solid #ccc!important"}}>
+                    <div style={{backgroundColor:'#bbb',height:"24px",width: Math.abs(this.state.zoomamount) + "%"}}></div>
+                </div>
                 {child}
             </ContentBox>
         )
@@ -119,40 +151,102 @@ export default class MasonryApp extends PureComponent {
 
     _updateZoom({event}){
 
-        this._columnHeights = {}
-        this._cache.clearAll()
+            //Figure out the zoom level to be at
 
-        var cb = function(){
+
+
+            this._columnHeights = {}
+            this._cache.clearAll()
+
+            var cb = function () {
                 this._calculateColumnCount()
                 this._resetCellPositioner()
                 this._masonry.updateCellCount(this._columnCount)
                 //this._masonry.clearCellPositions()
                 //this._masonry.recomputeCellPositions()
-        }
+            }
 
 
-        //TODO : Chain state update , cleanup
-        const {
-            columnWidth,
-            gutterSize
-        } = this.state
+            //TODO : Chain state update , cleanup
+            const {
+                columnWidth,
+                gutterSize
+            } = this.state
 
-        this._columnCount = Math.floor(this._width / (columnWidth + gutterSize))
-        if (this._columnCount > 50 ){
-            this._columnCount = 50
-        }
-        else if (this._columnCount < 23 ) {
-            this._columnCount = 23
-        }
+            // //Compute position of column
+            var current = event.clientX / columnWidth
 
 
-        if (event.wheelDeltaY > 0 ) {
-            this.setState({columnWidth: Math.max(this.state.columnWidth - event.wheelDeltaY,0) , columnCount:this._columnCount }, cb.bind(this))
-        }
-        if (event.wheelDeltaY < 0 ){
-            this.setState({columnWidth: Math.min(this.state.columnWidth - event.wheelDeltaY,200) , columnCount:this._columnCount}, cb.bind(this))
-        }
+            // Setup End
+
+
+            //Compute new scale index
+
+            //
+            //
+            //this._columnCount = Math.floor(this._width / (columnWidth + gutterSize))
+            // if (this._columnCount > 50 ){
+            //     this._columnCount = 50
+            // }
+            // else if (this._columnCount < 23 ) {
+            //     this._columnCount = 23
+            // }
+
+
+
+
+
+            let zoomamt  = this.state.zoomamount + (event.wheelDeltaY /10 )
+
+
+            if (zoomamt > 100){
+
+                zoomamt = 0
+
+                let start = this.state.list.get(Math.floor(current))
+                let end = this.state.list.get(Math.floor(current)+1)
+
+                console.log("Current Cell")
+                console.log(Math.floor(current))
+
+
+                console.log("Start End")
+                console.log(start)
+                console.log(end)
+
+                let items = [];
+                for (let i = start; i < (end); i = i + ((end - start)/50)){
+                    items.push(Math.floor(i));
+                }
+
+                console.log(items)
+
+                this.setState({
+                    columnWidth: Math.max(this.state.columnWidth - event.wheelDeltaY, 15),
+                    columnCount: this._columnCount,
+                    zoomamount:zoomamt,
+                    list: Immutable.List(items)
+                }, cb.bind(this))
+
+            }
+            else if (zoomamt < -100){
+                zoomamt = 0
+                this.setState({
+                    columnWidth: Math.min(this.state.columnWidth - event.wheelDeltaY, 200),
+                    columnCount: this._columnCount,
+                    zoomamount:zoomamt,
+                    //list: Immutable.List(items)
+
+                }, cb.bind(this))
+            }else{
+                this.setState({
+                    zoomamount:zoomamt
+                }, cb.bind(this))
+            }
+
     }
+
+
 
     _calculateColumnCount () {
         const {
@@ -168,6 +262,13 @@ export default class MasonryApp extends PureComponent {
 
         const datum = this.state.list.get(index % this.state.list.size)
 
+        //Cell format to simplify ... this will have to adapt to zoom
+        const tensMillions =  Math.floor(datum / 10000000 % 10)
+        const hundredMillions =  Math.floor(datum / 100000000 % 10)
+        const billions =  Math.floor(datum / 1000000000 % 10)
+
+        let label = billions + "." + hundredMillions + tensMillions +  "B"
+
         return (
             <CellMeasurer
                 cache={this._cache}
@@ -176,21 +277,14 @@ export default class MasonryApp extends PureComponent {
                 parent={parent}
             >
                 <div
-                    className={styles.Cell}
                     style={{
                         ...style,
-                        width: columnWidth
+                        width: columnWidth,
+                        backgroundColor: "#e6e6e6",
+                        fontSize:"x-small"
                     }}
                 >
-                    <div
-                        style={{
-                            backgroundColor: 'blue',
-                            borderRadius: '0.5rem',
-                            marginBottom: '0.5rem',
-                            width: '100%'
-                        }}
-                    />
-                    {datum}
+                    {label}
                 </div>
             </CellMeasurer>
         )
@@ -244,7 +338,6 @@ export default class MasonryApp extends PureComponent {
 
         const { height } = this.state
 
-        console.log("RERENDER")
         return (
             <Masonry
                 cellCount={this.state.columnCount}

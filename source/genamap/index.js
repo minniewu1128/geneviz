@@ -11,8 +11,8 @@ import Application from './Application'
 import MasonryApp from './MasonryApp'
 
 render(
-    //<Application/>,
-    <MasonryApp />,
+    <Application/>,
+    //<MasonryApp />,
   document.getElementById('root')
 )
 
