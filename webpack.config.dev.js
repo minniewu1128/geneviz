@@ -42,7 +42,13 @@ const config = {
   devServer: {
     contentBase: 'build',
     port: 3001,
-    quiet: true
+    quiet: true,
+    proxy: {
+  	'/data': {
+    	target: 'http://localhost:3000/',
+    	secure: false
+    	}
+    }
   }
 }
 

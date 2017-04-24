@@ -8,6 +8,7 @@ import Grid from '../Grid'
 import CustomWindowScroller from '../CustomWindowScroller'
 import cn from 'classnames'
 import styles from './axis.css'
+import axios from 'axios'
 
 let intial =   [143478261,
     286956522,
@@ -55,7 +56,7 @@ export default class Application extends PureComponent {
             height: 60,
             overscanColumnCount: 0,
             overscanRowCount: 1,
-            rowHeight: 50,
+            rowHeight: 30,
             rowCount: 29,
             scrollToColumn: undefined,
             scrollToRow: undefined,
@@ -63,7 +64,8 @@ export default class Application extends PureComponent {
             list:Immutable.List(intial),
             zoomindex:100,
             zoomamount:10,
-            zoomStack: [zoominfo]
+            zoomStack: [zoominfo],
+            data:[],
         }
 
         this._cellRenderer = this._cellRenderer.bind(this)
@@ -76,9 +78,39 @@ export default class Application extends PureComponent {
         this._onScrollToColumnChange = this._onScrollToColumnChange.bind(this)
         this._onScrollToRowChange = this._onScrollToRowChange.bind(this)
         this._renderBodyCell = this._renderBodyCell.bind(this)
+        this._renderDataCell = this._renderDataCell.bind(this)
         this._renderLeftSideCell = this._renderLeftSideCell.bind(this)
         this._getDatum = this._getDatum.bind(this)
+        this.fetchData = this.fetchData.bind(this)
         this._on
+    }
+
+    componentDidMount(){
+        this.fetchData(1,3000000000,25)
+    }
+
+    fetchData(start,end,steps){
+
+        let url = "http://localhost:3001/data/?start=" + start + "&end=" + end + " &zoom=" + Math.floor((end-start)/steps)
+        console.log(url)
+        axios.get(url)
+            .then((res) => {
+                console.log(res)
+
+                let items = [];
+                for (let i = 0; i < res.data.length; i++) {
+                    items.push(Math.floor(res.data[i]["start"]));
+                }
+
+                this.setState({ data: res.data , list:Immutable.List(items),},function(){
+                    this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
+
+                }.bind(this));
+            });
     }
 
     render() {
@@ -195,6 +227,8 @@ export default class Application extends PureComponent {
 
 
         if (zoomamt > 100) {
+
+            console.log(current)
             zoomamt = 0
             let start = this.state.list.get(Math.floor(current))
             let end = this.state.list.get(Math.floor(current) + 1)
@@ -209,7 +243,9 @@ export default class Application extends PureComponent {
 
 
 
-            this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0}, function () {
+            this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
+
+                this.fetchData(start,end,items.length)
 
                 this._onColumnCountChange((items.length))
                 this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
@@ -268,7 +304,9 @@ export default class Application extends PureComponent {
         // console.log(key)
         // console.log(style)
 
-        // if (columnIndex === 0) {
+         if (rowIndex > 0) {
+             return this._renderDataCell({columnIndex, key, rowIndex, style})
+         }
         //     return this._renderLeftSideCell({columnIndex, key, rowIndex, style})
         // } else {
             return this._renderBodyCell({columnIndex, key, rowIndex, style})
@@ -318,6 +356,37 @@ export default class Application extends PureComponent {
         )
     }
 
+    _renderDataCell({columnIndex, key, rowIndex, style}) {
+
+        let label = ""
+        if (this.state.data.length > 0){
+            if (this.state.data[columnIndex]){
+                label = this.state.data[columnIndex]["data"][rowIndex -1 ]
+            }
+        }
+
+        const rowClass = this._getRowClassName(rowIndex)
+
+        const classNames = cn(rowClass, styles.cell, {
+            [styles.centeredCell]: columnIndex > 2
+        })
+
+        style = {
+            ...style,
+            fontSize: "x-small",
+        }
+
+        return (
+            <div
+                className={classNames}
+                key={key}
+                style={style}
+            >
+                {label}
+            </div>
+        )
+    }
+
     _renderBodyCell({columnIndex, key, rowIndex, style}) {
         const rowClass = this._getRowClassName(rowIndex)
         const datum = this._getDatum(columnIndex)
@@ -329,7 +398,8 @@ export default class Application extends PureComponent {
 
         style = {
             ...style,
-            fontSize: "x-small"
+            fontSize: "x-small",
+            backgroundColor:"#e0e0e0"
         }
 
 
