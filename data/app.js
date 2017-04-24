@@ -1,17 +1,8 @@
 var express = require('express');
 var app = express();
-var mongoose = require('mongoose');
 var cheerio = require('cheerio');
 var fs = require('fs');
-
 var api = require('./routes/api');
-
-mongoose.connect('mongodb://127.0.0.1/test');
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function() {
-    console.log('Connected to DB');
-});
 
 app.get('/', function (req, res, next) {
 

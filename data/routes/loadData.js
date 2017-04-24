@@ -1,6 +1,6 @@
 var fs = require('fs');
 var readline = require('readline')
-
+var db = require('../db')
 var Data = require('../model/dataModel');
 var SNP = require('../model/snpModel');
 
@@ -12,9 +12,19 @@ exports.load = function (src, dst) {
             output: process.stdout,
             terminal: false
         });
+        var bulkSNP = [];
+        var bulkData = [];
+        rl.on('line', (input) => { // for each line in the CSV file
 
-        rl.on('line', (input) => {
+            if (bulkSNP.length == 2000 && bulkData.length == 2000) {
+                SNP.collection.insert(bulkSNP);
+                Data.collection.insert(bulkData);
+                bulkSNP = [];
+                bulkData = [];
+            }
+
             var row = input.split(",").filter(String);
+            
             var newSNP = new SNP({
                 rid: parseInt(row[0]),
                 name: row[1],
@@ -25,16 +35,22 @@ exports.load = function (src, dst) {
             
             var newData = new Data({
                 fileName: dst,
-                index: parseInt(row[4]),
-                data: row.slice(5, row.length),
+                index: row[4],
+                data: row.slice(5, row.length).map(parseFloat),
                 zoomLevel: 0 // for now all are at level 0
             });
 
-            newSNP.save();
-            newData.save();
-
+            bulkSNP.push(newSNP);
+            bulkData.push(newData);
+            
         }).on('close', () => {
-            // after data is loaded, fulfill promise
+            // insert remainder bulk & fulfill promise
+            console.log(bulkData.length);
+            SNP.collection.insert(bulkSNP);
+            Data.collection.insert(bulkData);
+
+            db.snps.createIndex({basePair: "1"});
+            db.datas.createIndex({index: "1"});
             resolve("Success!");
         });
     });
