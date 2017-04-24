@@ -45,12 +45,11 @@ exports.load = function (src, dst) {
             
         }).on('close', () => {
             // insert remainder bulk & fulfill promise
-            console.log(bulkData.length);
             SNP.collection.insert(bulkSNP);
             Data.collection.insert(bulkData);
 
-            db.snps.createIndex({basePair: "1"});
-            db.datas.createIndex({index: "1"});
+            SNP.collection.createIndex({basePair: "1"});
+            Data.collection.createIndex({index: "1"});
             resolve("Success!");
         });
     });
