@@ -6,7 +6,8 @@ var snpSchema = new Schema({
     name: String,
     allels: String,
     chrom: String,
-    basePair: Number
+    basePair: Number,
+    index: Number
 });
 
 module.exports = mongoose.model('SNP', snpSchema);

@@ -9,6 +9,34 @@ var readline = require('readline')
 var Data = require('../model/dataModel');
 var SNP = require('../model/snpModel');
 
+const genome = {
+    "1": 0,
+    "2": 248956422,
+    "3": 491149951,
+    "4": 689445510,
+    "5": 879660065,
+    "6": 1061198324,
+    "7": 1232004303,
+    "8": 1391350276,
+    "9": 1536488912,
+    "10": 1674883629,
+    "11": 1808681051,
+    "12": 1943767673,
+    "13": 2077042982,
+    "14": 2191407310,
+    "15": 2298451028,
+    "16": 2400442217,
+    "17": 2490780562,
+    "18": 2574038003,
+    "19": 2654411288,
+    "20": 2713028904,
+    "21": 2777473071,
+    "22": 2824183054,
+    "X": 2875001522,
+    "Y": 3031042417,
+    "M": 3088269832,
+    };
+
 /* Function loads CSV (src) into the db */
 exports.load = function (src, dst) {
     return new Promise((resolve, reject) => {
@@ -33,19 +61,22 @@ exports.load = function (src, dst) {
             }
 
             var row = input.split(",").filter(String);
-            
+            var chromosome = row[3];
+            var bp = parseInt(row[4]);
+            var index = genome[chromosome] + bp;
             // TODO: standardize CSV files that are to be loaded
             var newSNP = new SNP({
                 rid: parseInt(row[0]),
                 name: row[1],
                 allels: row[2],
-                chrom: row[3],
-                basePair: parseInt(row[4])
+                chrom: chromosome,
+                basePair: bp,
+                index: index
             });
             
             var newData = new Data({
                 fileName: dst,
-                index: row[4],
+                index: index,
                 data: row.slice(5, row.length).map(parseFloat),
                 zoomLevel: 0 // for now all are at level 0 (TODO: delete if aggregation is good to go)
             });
@@ -71,3 +102,32 @@ exports.deleteAll = function() {
     SNP.remove({}, function(){ console.log("removed all SNPs")}).exec();
     Data.remove({}, function(){ console.log("removed all Data")}).exec();
 }
+
+
+// const genome = [
+//     {"1": 248956422},
+//     {"2": 242193529},
+//     {"3": 198295559},
+//     {"4": 190214555},
+//     {"5": 181538259},
+//     {"6": 170805979},
+//     {"7": 159345973},
+//     {"8": 145138636},
+//     {"9": 138394717},
+//     {"10": 133797422},
+//     {"11": 135086622},
+//     {"12": 133275309},
+//     {"13": 114364328},
+//     {"14": 107043718},
+//     {"15": 101991189},
+//     {"16": 90338345},
+//     {"17": 83257441},
+//     {"18": 80373285},
+//     {"19": 58617616},
+//     {"20": 64444167},
+//     {"21": 46709983},
+//     {"22": 50818468},
+//     {"X": 156040895},
+//     {"Y": 57227415},
+//     {"M": 16569}
+//     ];
