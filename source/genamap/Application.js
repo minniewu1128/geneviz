@@ -10,29 +10,7 @@ import cn from 'classnames'
 import styles from './axis.css'
 import axios from 'axios'
 
-let intial =   [143478261,
-    286956522,
-    430434783,
-    573913044,
-    717391305,
-    860869566,
-    1004347827,
-    1147826088,
-    1291304349,
-    1434782610,
-    1578260871,
-    1721739132,
-    1865217393,
-    2008695654,
-    2152173915,
-    2295652176,
-    2439130437,
-    2582608698,
-    2726086959,
-    2869565220,
-    3013043481,
-    3156521742,
-    3300000003,]
+
 
 export default class Application extends PureComponent {
     static contextTypes = {
@@ -42,26 +20,23 @@ export default class Application extends PureComponent {
     constructor(props, context) {
         super(props, context)
 
-        const list = []
-
-        for (var i = 0; i < 25; i++) {
-            list.push(i)
+        const zoominfo = {"start":1,"end":3088286401}
+        let items = [];
+        for (let i = zoominfo.start; i < (zoominfo.end); i = i + ((zoominfo.end - zoominfo.start) / 25)) {
+            items.push(Math.floor(i));
         }
-
-        const zoominfo = {"start":1,"end":3000000000}
-
 
         this.state = {
             columnCount: 25,
             height: 60,
             overscanColumnCount: 0,
             overscanRowCount: 1,
-            rowHeight: 30,
-            rowCount: 29,
+            rowHeight: 20,
+            rowCount: 30,
             scrollToColumn: undefined,
             scrollToRow: undefined,
             useDynamicRowHeight: false,
-            list:Immutable.List(intial),
+            list:Immutable.List(items),
             zoomindex:100,
             zoomamount:10,
             zoomStack: [zoominfo],
@@ -77,7 +52,7 @@ export default class Application extends PureComponent {
         this._onRowCountChange = this._onRowCountChange.bind(this)
         this._onScrollToColumnChange = this._onScrollToColumnChange.bind(this)
         this._onScrollToRowChange = this._onScrollToRowChange.bind(this)
-        this._renderBodyCell = this._renderBodyCell.bind(this)
+        this._renderAxisCell = this._renderAxisCell.bind(this)
         this._renderDataCell = this._renderDataCell.bind(this)
         this._renderLeftSideCell = this._renderLeftSideCell.bind(this)
         this._getDatum = this._getDatum.bind(this)
@@ -86,12 +61,12 @@ export default class Application extends PureComponent {
     }
 
     componentDidMount(){
-        this.fetchData(1,3000000000,25)
+        this.fetchData(1,3088286401,25)
     }
 
     fetchData(start,end,steps){
 
-        let url = "http://localhost:3001/data/?start=" + start + "&end=" + end + " &zoom=" + Math.floor((end-start)/steps)
+        let url = "http://localhost:3001/data/?start=" + start + "&end=" + end + "&zoom=" + Math.floor((end-start)/steps)
         console.log(url)
         axios.get(url)
             .then((res) => {
@@ -202,7 +177,7 @@ export default class Application extends PureComponent {
                                     noContentRenderer={this._noContentRenderer}
                                     overscanColumnCount={overscanColumnCount}
                                     overscanRowCount={overscanRowCount}
-                                    rowHeight={50}
+                                    rowHeight={20}
                                     rowCount={rowCount}
                                     scrollToColumn={scrollToColumn}
                                     width={width}
@@ -228,8 +203,6 @@ export default class Application extends PureComponent {
 
         if (zoomamt > 100) {
 
-            console.log(current)
-            zoomamt = 0
             let start = this.state.list.get(Math.floor(current))
             let end = this.state.list.get(Math.floor(current) + 1)
 
@@ -241,45 +214,52 @@ export default class Application extends PureComponent {
             const zstack = this.state.zoomStack
             zstack.push({"start": start, "end": end})
 
-
-
             this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
 
                 this.fetchData(start,end,items.length)
 
                 this._onColumnCountChange((items.length))
                 this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
-                this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 0})
-                this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
-                this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
-                this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
+                this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
 
             }.bind(this))
-        } else if (zoomamt < - 100){
-            //
-            // let zstack = this.state.zoomStack
-            // zstack.pop()
-            //
-            //
-            //
-            // let start = zstack
-            // let end = this.state.list.get(Math.floor(current) + 1)
-            //
-            // let items = [];
-            // for (let i = start; i < (end); i = i + ((end - start) / 50)) {
-            //     items.push(Math.floor(i));
-            // }
-            //
-            // const zstack = this.state.zoomStack
-            // zstack.push({"start": start, "end": end})
+        } else if (zoomamt < -100){
+
+
+            // let c = this.state.zoomStack[this.state.zoomStack.length - 1]
+            //     zstack.splice(this.state.zoomStack.length - 1,1)
+            let zstack = this.state.zoomStack
+            if (zstack.length > 1){
+                 zstack.pop()
+
+
+                let start = zstack[zstack.length - 1].start
+                let end = zstack[zstack.length - 1].end
+
+                let items = [];
+                for (let i = start; i < (end); i = i + ((end - start) / 50)) {
+                    items.push(Math.floor(i));
+                }
+
+                this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
+
+                    this.fetchData(start,end,items.length)
+
+                    this._onColumnCountChange((items.length))
+                    this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 1})
+                    this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
+
+                }.bind(this))
+            }
 
 
         }
         else{
             this.setState({'zoomamount':zoomamt})
         }
-
-
 
         // for (var i = 0; i < Math.floor(Math.random() * (10000 - 1000 + 1)) ; i++) {
         //     list.push(Math.floor(Math.random() * (10000 - 1 + 1)))
@@ -289,11 +269,6 @@ export default class Application extends PureComponent {
         // this.setState({"list":Immutable.List(list)},function(){
         //     this._onColumnCountChange({"target":{"value":(list.length)}});
         // }.bind(this))
-
-
-
-
-
         //We want to update data
         //this.axis.forceUpdate()
     }
@@ -301,39 +276,23 @@ export default class Application extends PureComponent {
 
     _cellRenderer({columnIndex, key, rowIndex, style}) {
 
-        // console.log(key)
-        // console.log(style)
+         if (rowIndex <= 1){
+             return this._renderAxisCell({columnIndex, key, rowIndex, style})
 
-         if (rowIndex > 0) {
-             return this._renderDataCell({columnIndex, key, rowIndex, style})
          }
-        //     return this._renderLeftSideCell({columnIndex, key, rowIndex, style})
-        // } else {
-            return this._renderBodyCell({columnIndex, key, rowIndex, style})
-        //}
+        return this._renderDataCell({columnIndex, key, rowIndex, style})
+
     }
 
-    _getColumnWidth() {
-
-
-        // return this.state.zoomindex
-        // return Math.floor(Math.random() * (500 - 40)) + 40
-        //
-        // if (this.state.zoomindex < 0) {
-        //     return 80
-        // }
-        // if (this.state.zoomindex > 50) {
-        //     return 10
-        // }
+    _getColumnWidth(){
 
         if (this.state.zoomStack.length == 1 ){
-            return 60
-        }
-        else if (this.state.zoomStack.length == 2 ) {
             return 50
         }
-        return 30
-        
+        else if (this.state.zoomStack.length == 2 ) {
+            return 40
+        }
+        return 20
     }
 
     _getDatum(index) {
@@ -361,14 +320,14 @@ export default class Application extends PureComponent {
         let label = ""
         if (this.state.data.length > 0){
             if (this.state.data[columnIndex]){
-                label = this.state.data[columnIndex]["data"][rowIndex -1 ]
+                label = this.state.data[columnIndex]["data"][rowIndex - 2]
             }
         }
 
         const rowClass = this._getRowClassName(rowIndex)
 
         const classNames = cn(rowClass, styles.cell, {
-            [styles.centeredCell]: columnIndex > 2
+            [styles.centeredCell]: columnIndex > 1
         })
 
         style = {
@@ -387,19 +346,23 @@ export default class Application extends PureComponent {
         )
     }
 
-    _renderBodyCell({columnIndex, key, rowIndex, style}) {
+    _renderAxisCell({columnIndex, key, rowIndex, style}) {
+
+
+
         const rowClass = this._getRowClassName(rowIndex)
         const datum = this._getDatum(columnIndex)
 
 
         const classNames = cn(rowClass, styles.cell, {
-            [styles.centeredCell]: columnIndex > 2
+            [styles.centeredCell]: columnIndex > 0
         })
 
         style = {
             ...style,
             fontSize: "x-small",
-            backgroundColor:"#e0e0e0"
+            backgroundColor:"#e0e0e0",
+            overflow: "visible"
         }
 
 
@@ -416,6 +379,7 @@ export default class Application extends PureComponent {
         const endbil =  Math.floor(zstate.end / 1000000000 % 10)
 
         let label = billions + "." + hundredMillions + tensMillions + millions
+        label = datum
         // if(sbil > 0 || endbil > 0){
         //     label = billions + "." + hundredMillions + tensMillions +  "B"
         // }
@@ -423,6 +387,15 @@ export default class Application extends PureComponent {
         //     label = hundredMillions + tensMillions + millions  +"M"
         // }
 
+        if (rowIndex == 1){
+            label = ""
+        }
+
+        if ((columnIndex % 4) > 0 ) {
+            label = ""
+        }else if (rowIndex == 1){
+            label = "|"
+        }
 
         return (
             <div
