@@ -9,11 +9,23 @@ import CustomWindowScroller from '../CustomWindowScroller'
 import cn from 'classnames'
 import styles from './axis.css'
 import axios from 'axios'
-
+import d3 from 'd3'
 
 
 let timer = null;
-let global;
+let global = null;
+
+const colorRange = ["#990000", "#eeeeee", "#ffffff", "#eeeeee", "#000099"];
+
+const calculateColorScale = (min, max, threshold) => {
+    const mid = (min + max) / 2
+    //find the range in which colors can be muted, as a percentage of data range
+    const bound = (max - min) * threshold / 2
+    return d3.scale.linear()
+                  .domain([min, mid - bound, mid, mid + bound, max]) //this means that between mid +- bound, colors are muted
+                  .range(colorRange)
+} 
+
 
 export default class Application extends PureComponent {
     static contextTypes = {
@@ -205,7 +217,7 @@ export default class Application extends PureComponent {
         let zoomamt  = this.state.zoomamount + (event.wheelDeltaY / 10 )
         var current = event.clientX / this._getColumnWidth()
 
-        if (zoomamt > 100) {
+        if (zoomamt > 60) {
 
             let start = this.state.list.get(Math.floor(current))
             let end = this.state.list.get(Math.floor(current) + 1)
@@ -227,7 +239,7 @@ export default class Application extends PureComponent {
                 this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
 
             }.bind(this))
-        } else if (zoomamt < -100){
+        } else if (zoomamt < -55){
 
 
             // let c = this.state.zoomStack[this.state.zoomStack.length - 1]
@@ -261,7 +273,6 @@ export default class Application extends PureComponent {
         }
         else {
             global = this;
-
             if (timer !== null) { // scrolling
                 this.setState({'zoomamount': zoomamt})
                 clearTimeout(timer);
@@ -270,6 +281,7 @@ export default class Application extends PureComponent {
             timer = setTimeout(function() {
                 timer = null; // reset scroll bar
                 global.setState({'zoomamount': 0})
+                global = null;
             }, 300);
         }
 
@@ -337,6 +349,9 @@ export default class Application extends PureComponent {
             }
         }
 
+        let cellColorScale = calculateColorScale(0, 1, parseInt(label))
+        let color = cellColorScale(label)
+
         const rowClass = this._getRowClassName(rowIndex)
 
         const classNames = cn(rowClass, styles.cell, {
@@ -346,15 +361,16 @@ export default class Application extends PureComponent {
         style = {
             ...style,
             fontSize: "x-small",
+            backgroundColor: color
         }
-
+        
+        // {label} to add number
         return (
             <div
                 className={classNames}
                 key={key}
                 style={style}
             >
-                {label}
             </div>
         )
     }

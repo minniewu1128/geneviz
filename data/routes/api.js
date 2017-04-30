@@ -30,6 +30,8 @@ exports.getRange = function (start, end, factor=1) {
 
     // no aggregation
     if (factor <= 1) {
+        start = 1;
+        end = parseInt(end);
         return new Promise((resolve, reject) => {
             Data.find({
                 index: { $gte: start, $lt: end }
@@ -48,8 +50,8 @@ exports.getRange = function (start, end, factor=1) {
         });
     }
     
-    // aggregate
-    else {
+    // // aggregate
+    // else {
         return new Promise((resolve, reject) => {
             start = parseInt(start);
             end = parseInt(end);
@@ -104,11 +106,14 @@ exports.getRange = function (start, end, factor=1) {
                         // format [{index: rangeOfValues, data:[values]}, {}, ...]
                         aggregateResults.push(obj);
                     }
-                    
-                    resolve(aggregateResults);
+                    if (!aggregateResults || aggregateResults.length == 0) { // no results
+                        resolve(null);
+                    } else {
+                        resolve(aggregateResults);
+                    }
             });
-        });
-    }
+        })
+    // }
 }
 
 /*
