@@ -34,6 +34,9 @@ let intial =   [143478261,
     3156521742,
     3300000003,]
 
+let timer = null;
+let global;
+
 export default class Application extends PureComponent {
     static contextTypes = {
         list: PropTypes.instanceOf(Immutable.List).isRequired
@@ -63,7 +66,7 @@ export default class Application extends PureComponent {
             useDynamicRowHeight: false,
             list:Immutable.List(intial),
             zoomindex:100,
-            zoomamount:10,
+            zoomamount: 0,
             zoomStack: [zoominfo],
             data:[],
         }
@@ -127,7 +130,7 @@ export default class Application extends PureComponent {
         } = this.state
 
         return (
-            <ContentBox>
+            <ContentBox className={styles.contentBox}>
 
                 <InputRow>
                     <LabeledInput
@@ -183,8 +186,10 @@ export default class Application extends PureComponent {
                     />
                 </InputRow>
 
-                <div style={{border:"1px solid #ccc!important"}}>
-                    <div style={{backgroundColor:'#bbb',height:"24px",width: Math.abs(this.state.zoomamount) + "%"}}></div>
+                <div className={styles.zoomBar} >
+                    <div className={styles.zoomBarCursorMid}></div>
+                    <div className={styles.zoomBarCursorBot} style={{height: (this.state.zoomamount) + "%"}}></div>
+                    <div className={styles.zoomBarCursorTop} style={{height: (-1 * this.state.zoomamount) + "%"}}></div>
                 </div>
 
 
@@ -222,9 +227,8 @@ export default class Application extends PureComponent {
 
     _updateZoom({event}) {
 
-        let zoomamt  = this.state.zoomamount + (event.wheelDeltaY /10 )
+        let zoomamt  = this.state.zoomamount + (event.wheelDeltaY / 10 )
         var current = event.clientX / this._getColumnWidth()
-
 
         if (zoomamt > 100) {
 
@@ -255,7 +259,7 @@ export default class Application extends PureComponent {
                 this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
 
             }.bind(this))
-        } else if (zoomamt < - 100){
+        } else if (zoomamt < -100){
             //
             // let zstack = this.state.zoomStack
             // zstack.pop()
@@ -272,13 +276,23 @@ export default class Application extends PureComponent {
             //
             // const zstack = this.state.zoomStack
             // zstack.push({"start": start, "end": end})
-
+            zoomamt = 0;
+            this.setState({'zoomamount': zoomamt});
 
         }
-        else{
-            this.setState({'zoomamount':zoomamt})
-        }
+        else {
+            global = this;
 
+            if (timer !== null) { // scrolling
+                this.setState({'zoomamount': zoomamt})
+                clearTimeout(timer);
+            }
+            // everytime we scroll, we set a timer to know when the user stops scrolling
+            timer = setTimeout(function() {
+                timer = null; // reset scroll bar
+                global.setState({'zoomamount': 0})
+            }, 300);
+        }
 
 
         // for (var i = 0; i < Math.floor(Math.random() * (10000 - 1000 + 1)) ; i++) {
