@@ -119,7 +119,6 @@ export default class CustomWindowScroller extends PureComponent {
 
   // Referenced by utils/onScroll
   __handleWindowScrollEvent (event) {
-
     const { onScroll } = this.props
 
     const scrollElement = this.props.scrollElement || window
@@ -130,15 +129,23 @@ export default class CustomWindowScroller extends PureComponent {
       scrollTop
     })
 
+
     onScroll({
-      event
+      event: event, 
+      isScrolling: true
     })
+
   }
 
   // Referenced by utils/onScroll
   __resetIsScrolling () {
+    const { onScroll } = this.props
     this.setState({
       isScrolling: false
+    })
+    
+    onScroll({
+      isScrolling: this.state.isScrolling
     })
   }
 }

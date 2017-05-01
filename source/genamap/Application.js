@@ -76,7 +76,7 @@ export default class Application extends PureComponent {
     }
 
     componentDidMount(){
-        this.fetchData(1,3088286401,25)
+        this.fetchData(1,3088286401, 50)
     }
 
     fetchData(start,end,steps){
@@ -190,14 +190,16 @@ export default class Application extends PureComponent {
                                     className={styles.BodyGrid}
                                     columnWidth={this._getColumnWidth}
                                     columnCount={columnCount}
-                                    height={500}
+                                    height={height - this._convertRemToPixels(6)}
                                     noContentRenderer={this._noContentRenderer}
                                     overscanColumnCount={overscanColumnCount}
                                     overscanRowCount={overscanRowCount}
-                                    rowHeight={20}
+                                    rowHeight={
+                                        (height-this._convertRemToPixels(7)) / rowCount
+                                    }
                                     rowCount={rowCount}
                                     scrollToColumn={scrollToColumn}
-                                    width={width}
+                                    width={width - this._convertRemToPixels(5)}
                                 />
                             )}
                         </AutoSizer>
@@ -208,54 +210,32 @@ export default class Application extends PureComponent {
         )
     }
 
+    _convertRemToPixels(rem) {    
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+
     _setRef (windowScroller) {
         this._windowScroller = windowScroller
     }
 
-    _updateZoom({event}) {
+    _updateZoom({event, isScrolling}) {
+        if (isScrolling == false) this.setState({'zoomamount': 0})
+        else {
+            let zoomamt  = this.state.zoomamount + (event.wheelDeltaY / 10 )
+            var current = event.clientX / this._getColumnWidth()
 
-        let zoomamt  = this.state.zoomamount + (event.wheelDeltaY / 10 )
-        var current = event.clientX / this._getColumnWidth()
+            if (zoomamt > 60) {
 
-        if (zoomamt > 60) {
-
-            let start = this.state.list.get(Math.floor(current))
-            let end = this.state.list.get(Math.floor(current) + 1)
-
-            let items = [];
-            for (let i = start; i < (end); i = i + ((end - start) / 50)) {
-                items.push(Math.floor(i));
-            }
-
-            const zstack = this.state.zoomStack
-            zstack.push({"start": start, "end": end})
-
-            this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
-
-                this.fetchData(start,end,items.length)
-
-                this._onColumnCountChange((items.length))
-                this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
-                this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
-
-            }.bind(this))
-        } else if (zoomamt < -55){
-
-
-            // let c = this.state.zoomStack[this.state.zoomStack.length - 1]
-            //     zstack.splice(this.state.zoomStack.length - 1,1)
-            let zstack = this.state.zoomStack
-            if (zstack.length > 1){
-                 zstack.pop()
-
-
-                let start = zstack[zstack.length - 1].start
-                let end = zstack[zstack.length - 1].end
+                let start = this.state.list.get(Math.floor(current))
+                let end = this.state.list.get(Math.floor(current) + 1)
 
                 let items = [];
                 for (let i = start; i < (end); i = i + ((end - start) / 50)) {
                     items.push(Math.floor(i));
                 }
+
+                const zstack = this.state.zoomStack
+                zstack.push({"start": start, "end": end})
 
                 this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
 
@@ -263,39 +243,58 @@ export default class Application extends PureComponent {
 
                     this._onColumnCountChange((items.length))
                     this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 1})
-                    this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
+                    this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
 
                 }.bind(this))
+            } else if (zoomamt < -60){
+
+
+                // let c = this.state.zoomStack[this.state.zoomStack.length - 1]
+                //     zstack.splice(this.state.zoomStack.length - 1,1)
+                let zstack = this.state.zoomStack
+                if (zstack.length > 1){
+                    zstack.pop()
+
+
+                    let start = zstack[zstack.length - 1].start
+                    let end = zstack[zstack.length - 1].end
+
+                    let items = [];
+                    for (let i = start; i < (end); i = i + ((end - start) / 50)) {
+                        items.push(Math.floor(i));
+                    }
+
+                    this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
+
+                        this.fetchData(start,end,items.length)
+
+                        this._onColumnCountChange((items.length))
+                        this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
+                        this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 1})
+                        this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
+                        this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
+                        this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
+
+                    }.bind(this))
+                }
             }
-        }
-        else {
-            global = this;
-            if (timer !== null) { // scrolling
+            else {
                 this.setState({'zoomamount': zoomamt})
-                clearTimeout(timer);
             }
-            // everytime we scroll, we set a timer to know when the user stops scrolling
-            timer = setTimeout(function() {
-                timer = null; // reset scroll bar
-                global.setState({'zoomamount': 0})
-                global = null;
-            }, 300);
-        }
 
 
-        // for (var i = 0; i < Math.floor(Math.random() * (10000 - 1000 + 1)) ; i++) {
-        //     list.push(Math.floor(Math.random() * (10000 - 1 + 1)))
-        // }
-        //
-        // console.log(list.length)
-        // this.setState({"list":Immutable.List(list)},function(){
-        //     this._onColumnCountChange({"target":{"value":(list.length)}});
-        // }.bind(this))
-        //We want to update data
-        //this.axis.forceUpdate()
+            // for (var i = 0; i < Math.floor(Math.random() * (10000 - 1000 + 1)) ; i++) {
+            //     list.push(Math.floor(Math.random() * (10000 - 1 + 1)))
+            // }
+            //
+            // console.log(list.length)
+            // this.setState({"list":Immutable.List(list)},function(){
+            //     this._onColumnCountChange({"target":{"value":(list.length)}});
+            // }.bind(this))
+            //We want to update data
+            //this.axis.forceUpdate()
+            }
+        
     }
 
 
@@ -310,7 +309,7 @@ export default class Application extends PureComponent {
     }
 
     _getColumnWidth(){
-
+        
         if (this.state.zoomStack.length == 1 ){
             return 50
         }
@@ -391,9 +390,9 @@ export default class Application extends PureComponent {
             ...style,
             fontSize: "x-small",
             backgroundColor:"#e0e0e0",
-            overflow: "visible"
+            overflow: "visible",
+            cursor: "move"
         }
-
 
         //Format based on length of number
         const millions =  Math.floor(datum / 1000000 % 10)
@@ -447,7 +446,8 @@ export default class Application extends PureComponent {
         // Since Grid caches and re-uses them, they aren't safe to modify.
         style = {
             ...style,
-            backgroundColor: datum.color
+            backgroundColor: datum.color,
+            cursor: "move"
         }
 
         return (

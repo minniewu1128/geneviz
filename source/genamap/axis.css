@@ -20,9 +20,8 @@
 
 .BodyGrid {
     border: 0px solid #e0e0e0;
-    left: 25px;
-    top: 150;
-    position: fixed;
+    left: 2rem;
+    margin-top: 0.5rem;
 }
 
 .evenRow,
@@ -82,11 +81,11 @@
 
 .zoomBar {
     border: 1px solid #ccc;
-    left: 15px;
-    top: 75px;
-    height: 80%;
+    left: 0.5rem;
+    top: 5rem;
+    height: 85%;
     width: 24px;
-    position: fixed;
+    position: absolute;
 }
 
 .zoomBarCursorMid {
