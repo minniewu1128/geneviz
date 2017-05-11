@@ -14,6 +14,9 @@ var api = require('./routes/api');
 /* Connect to db */
 var db = require('./db');
 
+/* Temp Cache till we have a better solution */
+var simpleCache = {}
+
 app.all('/', function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "X-Requested-With");
@@ -82,9 +85,17 @@ app.get('/data', function (req, res) {
             end: req.query.end,
             zoom: req.query.zoom
         };
+
+        if (simpleCache[response.start + ":" + response.end] && simpleCache[response.start + ":" + response.end][response.zoom]){
+            console.log("CACHE YES")
+            res.send(simpleCache[response.start + ":" + response.end][response.zoom])
+        }
            
         api.getRange(response.start, response.end, response.zoom).then(function(result) {
-                res.send(result);
+                var f = {}
+                f[response.zoom] =  result
+                simpleCache[response.start + ":" + response.end] = f
+            res.send(result);
         });
 })
 

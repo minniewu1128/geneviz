@@ -42,7 +42,7 @@ export default class Application extends PureComponent {
         }
 
         this.state = {
-            columnCount: 25,
+            columnCount: 100,
             height: 60,
             overscanColumnCount: 0,
             overscanRowCount: 1,
@@ -76,7 +76,7 @@ export default class Application extends PureComponent {
     }
 
     componentDidMount(){
-        this.fetchData(1,3088286401, 50)
+        this.fetchData(1,3088286401,100)
     }
 
     fetchData(start,end,steps){
@@ -229,8 +229,9 @@ export default class Application extends PureComponent {
                 let start = this.state.list.get(Math.floor(current))
                 let end = this.state.list.get(Math.floor(current) + 1)
 
+
                 let items = [];
-                for (let i = start; i < (end); i = i + ((end - start) / 50)) {
+                for (let i = start; i < (end); i = i + ((end - start) / 100)) {
                     items.push(Math.floor(i));
                 }
 
@@ -259,14 +260,16 @@ export default class Application extends PureComponent {
                     let start = zstack[zstack.length - 1].start
                     let end = zstack[zstack.length - 1].end
 
+
                     let items = [];
-                    for (let i = start; i < (end); i = i + ((end - start) / 50)) {
+                    for (let i = start; i < (end); i = i + ((end - start) / 100)) {
                         items.push(Math.floor(i));
                     }
 
                     this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
 
-                        this.fetchData(start,end,items.length)
+                    this.fetchData(start,end,items.length)
+                    this._computeMajorAxisLabels(start,end,items.length)
 
                         this._onColumnCountChange((items.length))
                         this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
@@ -309,14 +312,8 @@ export default class Application extends PureComponent {
     }
 
     _getColumnWidth(){
-        
-        if (this.state.zoomStack.length == 1 ){
-            return 50
-        }
-        else if (this.state.zoomStack.length == 2 ) {
-            return 40
-        }
-        return 20
+        return 13
+
     }
 
     _getDatum(index) {
@@ -403,26 +400,44 @@ export default class Application extends PureComponent {
 
         //Compute the resolution for the scale
         let zstate = this.state.zoomStack[this.state.zoomStack.length - 1]
-        const sbil =  Math.floor(zstate.start / 1000000000 % 10)
-        const endbil =  Math.floor(zstate.end / 1000000000 % 10)
 
-        let label = billions + "." + hundredMillions + tensMillions + millions
-        label = datum
-        // if(sbil > 0 || endbil > 0){
-        //     label = billions + "." + hundredMillions + tensMillions +  "B"
-        // }
-        // else{
-        //     label = hundredMillions + tensMillions + millions  +"M"
-        // }
+
+        let label = "" //billions + "." + hundredMillions + tensMillions + millions
+
+        //Computer Major Axis Scale
+        let scale = 1000 * 1000 * 1000 * 10 // 1 Billion
+        let start = Math.floor(zstate.start / scale % 10)
+        let end = Math.floor(zstate.end / scale % 10)
+
+        while (start == end){
+            scale = scale / 10
+            start = Math.floor(zstate.start / scale % 10)
+            end = Math.floor(zstate.end / scale % 10)
+        }
+
+
+        //Major Axis : Markers in Billions
+        if ((columnIndex % 5) == 0 && (rowIndex == 0)) {
+            label = billions + "." +  hundredMillions + "" + tensMillions  + "B"
+        }
+
+
+            //Minot Axis : Markers in Millions
 
         if (rowIndex == 1){
             label = ""
         }
 
-        if ((columnIndex % 4) > 0 ) {
+        scale = scale /10
+
+        if ((columnIndex % 5) > 0 && rowIndex == 1) {
             label = ""
         }else if (rowIndex == 1){
             label = "|"
+        }
+
+        if (label === NaN) {
+            label = datum
         }
 
         return (
@@ -498,5 +513,20 @@ export default class Application extends PureComponent {
         }
 
         this.setState({scrollToRow})
+    }
+
+    _computeMajorAxisLabels(start,end,numberitems){
+        //If next one is changing keep gap of 4//
+
+        let items = []
+        for (let i = zoominfo.start; i < (zoominfo.end); i = i + ((zoominfo.end - zoominfo.start) / 25)) {
+
+            items.push(Math.floor(i));
+        }
+
+    }
+
+    _computeMinorAxisLabels(){
+
     }
 }

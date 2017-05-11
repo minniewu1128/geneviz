@@ -11,6 +11,9 @@ var getZoomFactor = function(zoom) {
     return Math.pow(10, zoom);
 }
 
+
+
+
 /* 
  * Main API call to query range of results from db
  * arg: start - start index of query (inclusive)
@@ -49,6 +52,7 @@ exports.getRange = function (start, end, factor=1) {
             });
         });
     }
+
     
     // // aggregate
     // else {
