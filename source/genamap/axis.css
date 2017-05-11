@@ -1,38 +1,20 @@
-.contentBox {
-    height: 100%;
+body, html, #root {
     width: 100%;
-    position: fixed;
-    overflow: hidden;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont,  "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",  "Fira Sans", "Droid Sans", "Helvetica Neue",  sans-serif;
+    font-size: 12px;
 }
-.GridRow {
-    margin-top: 15px;
-    display: flex;
-    flex-direction: row;
-}
-.GridColumn {
-    display: flex;
-    flex-direction: column;
+.CustomWindowScrollerWrapper {
     flex: 1 1 auto;
 }
-.LeftSideGridContainer {
-    flex: 0 0 50px;
+
+* {
+    box-sizing: border-box;
+
 }
 
-.BodyGrid {
-    border: 0px solid #e0e0e0;
-    left: 2rem;
-    margin-top: 0.5rem;
-}
-
-.evenRow,
-.oddRow {
-    border-bottom: 1px solid #e0e0e0;
-}
-.oddRow {
-    background-color: #fafafa;
-}
-
-.cell,
 .headerCell {
     width: 100%;
     height: 100%;
@@ -42,14 +24,22 @@
 }
 
 .cell {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border-right: 1px dotted #e0e0e0;
     border-bottom: 1px solid #e0e0e0;
     background-color: rgba(199, 226, 212, 0.23);
-    transition-property: all;
-    transition-duration: .5s;
-    transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
 }
 
+
+.cell:hover {
+    background-color: rgba(0, 0, 0, .2);
+}
+.hoveredItem {
+    background-color: rgba(0, 0, 0, .1);
+}
 
 .headerCell {
     font-weight: bold;
@@ -66,6 +56,7 @@
     text-align: center;
 }
 
+
 .noCells {
     position: absolute;
     top: 0;
@@ -80,6 +71,7 @@
 }
 
 .zoomBar {
+    z-index: 100;
     border: 1px solid #ccc;
     left: 0.5rem;
     top: 5rem;

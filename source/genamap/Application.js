@@ -43,13 +43,11 @@ export default class Application extends PureComponent {
 
         this.state = {
             columnCount: 100,
-            height: 60,
+            //height: 60,
             overscanColumnCount: 0,
-            overscanRowCount: 1,
+            overscanRowCount: 0,
             rowHeight: 20,
             rowCount: 30,
-            scrollToColumn: undefined,
-            scrollToRow: undefined,
             useDynamicRowHeight: false,
             list:Immutable.List(items),
             zoomindex:100,
@@ -60,8 +58,8 @@ export default class Application extends PureComponent {
 
         this._cellRenderer = this._cellRenderer.bind(this)
         this._getColumnWidth = this._getColumnWidth.bind(this)
-        this._getRowClassName = this._getRowClassName.bind(this)
-        this._getRowHeight = this._getRowHeight.bind(this)
+        // this._getRowClassName = this._getRowClassName.bind(this)
+        // this._getRowHeight = this._getRowHeight.bind(this)
         this._noContentRenderer = this._noContentRenderer.bind(this)
         this._onColumnCountChange = this._onColumnCountChange.bind(this)
         this._onRowCountChange = this._onRowCountChange.bind(this)
@@ -117,62 +115,7 @@ export default class Application extends PureComponent {
         } = this.state
 
         return (
-            <ContentBox className={styles.contentBox}>
-
-                <InputRow>
-                    <LabeledInput
-                        label='Num columns'
-                        name='columnCount'
-                        onChange={this._onColumnCountChange}
-                        value={columnCount}
-                    />
-                    <LabeledInput
-                        label='Num rows'
-                        name='rowCount'
-                        onChange={this._onRowCountChange}
-                        value={rowCount}
-                    />
-                    <LabeledInput
-                        label='Scroll to column'
-                        name='onScrollToColumn'
-                        placeholder='Index...'
-                        onChange={this._onScrollToColumnChange}
-                        value={scrollToColumn || ''}
-                    />
-                    <LabeledInput
-                        label='Scroll to row'
-                        name='onScrollToRow'
-                        placeholder='Index...'
-                        onChange={this._onScrollToRowChange}
-                        value={scrollToRow || ''}
-                    />
-                    <LabeledInput
-                        label='List height'
-                        name='height'
-                        onChange={event => this.setState({height: parseInt(event.target.value, 10) || 1})}
-                        value={height}
-                    />
-                    <LabeledInput
-                        disabled={useDynamicRowHeight}
-                        label='Row height'
-                        name='rowHeight'
-                        onChange={event => this.setState({rowHeight: parseInt(event.target.value, 10) || 1})}
-                        value={rowHeight}
-                    />
-                    <LabeledInput
-                        label='Overscan columns'
-                        name='overscanColumnCount'
-                        onChange={event => this.setState({overscanColumnCount: parseInt(event.target.value, 10) || 0})}
-                        value={overscanColumnCount}
-                    />
-                    <LabeledInput
-                        label='Overscan rows'
-                        name='overscanRowCount'
-                        onChange={event => this.setState({overscanRowCount: parseInt(event.target.value, 10) || 0})}
-                        value={overscanRowCount}
-                    />
-                </InputRow>
-
+            <div>
                 <div className={styles.zoomBar} >
                     <div className={styles.zoomBarCursorMid}></div>
                     <div className={styles.zoomBarCursorBot} style={{height: (this.state.zoomamount) + "%"}}></div>
@@ -180,33 +123,33 @@ export default class Application extends PureComponent {
                 </div>
 
 
-                <CustomWindowScroller onScroll={this._updateZoom.bind(this)}>
-                    {({ height, isScrolling, scrollTop }) => (
-                        <AutoSizer disableHeight>
-                            {({width}) => (
-                                <Grid
-                                    ref={(input) => { this.axis = input}}
-                                    cellRenderer={this._cellRenderer}
-                                    className={styles.BodyGrid}
-                                    columnWidth={this._getColumnWidth}
-                                    columnCount={columnCount}
-                                    height={height - this._convertRemToPixels(6)}
-                                    noContentRenderer={this._noContentRenderer}
-                                    overscanColumnCount={overscanColumnCount}
-                                    overscanRowCount={overscanRowCount}
-                                    rowHeight={
-                                        (height-this._convertRemToPixels(7)) / rowCount
-                                    }
-                                    rowCount={rowCount}
-                                    scrollToColumn={scrollToColumn}
-                                    width={width - this._convertRemToPixels(5)}
-                                />
-                            )}
-                        </AutoSizer>
-                    )}
-                </CustomWindowScroller>
-            </ContentBox>
-
+                <div className={styles.CustomWindowScrollerWrapper}>
+                    <CustomWindowScroller onScroll={this._updateZoom.bind(this)}>
+                        {({ height, isScrolling, scrollTop }) => (
+                            <AutoSizer disableHeight>
+                                {({width}) => (
+                                    <Grid
+                                        ref={(input) => { this.axis = input}}
+                                        cellRenderer={this._cellRenderer}
+                                        columnWidth={this._getColumnWidth}
+                                        columnCount={columnCount}
+                                        height={height}
+                                        width={width}
+                                        noContentRenderer={this._noContentRenderer}
+                                        overscanColumnCount={overscanColumnCount}
+                                        overscanRowCount={overscanRowCount}
+                                        rowHeight={
+                                            ((height - 10) / rowCount)
+                                        }
+                                        rowCount={rowCount}
+                                        scrollToColumn={scrollToColumn}
+                                    />
+                                )}
+                            </AutoSizer>
+                        )}
+                    </CustomWindowScroller>
+                </div>
+            </div>
         )
     }
 
@@ -312,8 +255,7 @@ export default class Application extends PureComponent {
     }
 
     _getColumnWidth(){
-        return 13
-
+        return 15
     }
 
     _getDatum(index) {
@@ -323,10 +265,10 @@ export default class Application extends PureComponent {
     _getRowClassName(row) {
         return row % 2 === 0 ? styles.evenRow : styles.oddRow
     }
-
-    _getRowHeight({index}) {
-        return this._getDatum(index).bind(this).size
-    }
+    //
+    // _getRowHeight({index}) {
+    //     return this._getDatum(index).bind(this).size
+    // }
 
     _noContentRenderer() {
         return (
@@ -338,37 +280,58 @@ export default class Application extends PureComponent {
 
     _renderDataCell({columnIndex, key, rowIndex, style}) {
 
+
         let label = ""
         if (this.state.data.length > 0){
             if (this.state.data[columnIndex]){
                 label = this.state.data[columnIndex]["data"][rowIndex - 2]
             }
         }
-
         let cellColorScale = calculateColorScale(0, 1, parseInt(label))
         let color = cellColorScale(label)
 
-        const rowClass = this._getRowClassName(rowIndex)
-
-        const classNames = cn(rowClass, styles.cell, {
-            [styles.centeredCell]: columnIndex > 1
-        })
+        // const rowClass = this._getRowClassName(rowIndex)
+        // const classNames = cn(rowClass, styles.cell, {
+        //     [styles.centeredCell]: columnIndex > 1
+        // })
 
         style = {
             ...style,
-            fontSize: "x-small",
             backgroundColor: color
         }
-        
+
+
+        var grid = this.axis
+        //
+        var className = columnIndex === this.state.hoveredColumnIndex || rowIndex === this.state.hoveredRowIndex
+            ? 'cell hoveredItem'
+            : 'cell'
+        var setState = this.setState.bind(this)
+
+
+        return React.DOM.div({
+            className: className,
+            key: key,
+            onMouseOver: function () {
+                setState({
+                    hoveredColumnIndex: columnIndex,
+                    hoveredRowIndex: rowIndex
+                })
+                //grid.forceUpdate()
+            },
+            style: style
+        })
+
+
         // {label} to add number
-        return (
-            <div
-                className={classNames}
-                key={key}
-                style={style}
-            >
-            </div>
-        )
+        // return (
+        //     <div
+        //         className={classNames}
+        //         key={key}
+        //         style={style}
+        //     >
+        //     </div>
+        // )
     }
 
     _renderAxisCell({columnIndex, key, rowIndex, style}) {
@@ -476,12 +439,6 @@ export default class Application extends PureComponent {
         )
     }
 
-    _updateUseDynamicRowHeights(value) {
-        this.setState({
-            useDynamicRowHeight: value
-        })
-    }
-
     _onColumnCountChange(columnCount) {
         //const columnCount = parseInt(event.target.value, 10) || 0
         this.setState({columnCount})
@@ -489,7 +446,6 @@ export default class Application extends PureComponent {
 
     _onRowCountChange(event) {
         const rowCount = parseInt(event.target.value, 10) || 0
-
         this.setState({rowCount})
     }
 
@@ -526,7 +482,4 @@ export default class Application extends PureComponent {
 
     }
 
-    _computeMinorAxisLabels(){
-
-    }
 }

@@ -129,7 +129,11 @@ export default class CustomWindowScroller extends PureComponent {
             scrollTop
         })
 
-    onScroll({
+        //Prevent chrome from scrolling back to prev page
+        event.preventDefault()
+
+
+      onScroll({
       event: event, 
       isScrolling: true
     })
