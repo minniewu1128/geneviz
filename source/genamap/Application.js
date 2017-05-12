@@ -11,11 +11,11 @@ import styles from './axis.css'
 import axios from 'axios'
 import d3 from 'd3'
 
-
-let timer = null;
-let global = null;
-
 const colorRange = ["#990000", "#eeeeee", "#ffffff", "#eeeeee", "#000099"];
+const zoomFactor = 25;
+// (3088286401-1 / largestIndex^zoomFactor) > 0
+const maxZoom = 5;
+let dataIndex = 0;
 
 const calculateColorScale = (min, max, threshold) => {
     const mid = (min + max) / 2
@@ -37,12 +37,12 @@ export default class Application extends PureComponent {
 
         const zoominfo = {"start":1,"end":3088286401}
         let items = [];
-        for (let i = zoominfo.start; i < (zoominfo.end); i = i + ((zoominfo.end - zoominfo.start) / 25)) {
+        let factor = ((zoominfo.end - zoominfo.start) / zoomFactor);
+        for (let i = zoominfo.start; i < (zoominfo.end); i = i + factor) {
             items.push(Math.floor(i));
         }
-
         this.state = {
-            columnCount: 100,
+            columnCount: zoomFactor,
             //height: 60,
             overscanColumnCount: 0,
             overscanRowCount: 0,
@@ -52,8 +52,11 @@ export default class Application extends PureComponent {
             list:Immutable.List(items),
             zoomindex:100,
             zoomamount: 0,
+            zoomLevel: 0,
             zoomStack: [zoominfo],
             data:[],
+            dataIndex: 0,
+            lastFactor: factor
         }
 
         this._cellRenderer = this._cellRenderer.bind(this)
@@ -70,11 +73,15 @@ export default class Application extends PureComponent {
         this._renderLeftSideCell = this._renderLeftSideCell.bind(this)
         this._getDatum = this._getDatum.bind(this)
         this.fetchData = this.fetchData.bind(this)
+        this._dataInRange = this._dataInRange.bind(this)
+        this._getDataIndex = this._getDataIndex.bind(this)
+        this._updateDataIndex = this._updateDataIndex.bind(this)
+        this._resetDataIndex = this._resetDataIndex.bind(this)
         this._on
     }
 
     componentDidMount(){
-        this.fetchData(1,3088286401,100)
+        this.fetchData(1,3088286401,zoomFactor)
     }
 
     fetchData(start,end,steps){
@@ -85,12 +92,8 @@ export default class Application extends PureComponent {
             .then((res) => {
                 console.log(res)
 
-                let items = [];
-                for (let i = 0; i < res.data.length; i++) {
-                    items.push(Math.floor(res.data[i]["start"]));
-                }
-
-                this.setState({ data: res.data , list:Immutable.List(items),},function(){
+                //this.setState({ data: res.data , list:Immutable.List(items),},function(){
+                this.setState({ data: res.data },function(){
                     this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
                     this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 0})
                     this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
@@ -113,13 +116,23 @@ export default class Application extends PureComponent {
             scrollToRow,
             useDynamicRowHeight
         } = this.state
+        
+        let cursorPosition;
+        if (this.state.zoomamount > 0) {
+            cursorPosition =  Math.min(100, ((99 - (100*(this.state.zoomLevel / maxZoom))) -  (this.state.zoomamount*0.3))) + "%";
+        } else {
+            cursorPosition =  Math.max(0, (99 - (100*(this.state.zoomLevel / maxZoom))) -  (this.state.zoomamount*0.3)) + "%";
+        }
 
         return (
             <div>
                 <div className={styles.zoomBar} >
-                    <div className={styles.zoomBarCursorMid}></div>
-                    <div className={styles.zoomBarCursorBot} style={{height: (this.state.zoomamount) + "%"}}></div>
-                    <div className={styles.zoomBarCursorTop} style={{height: (-1 * this.state.zoomamount) + "%"}}></div>
+                    <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(5/maxZoom)) + "%"}}></div>
+                    <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(4/maxZoom)) + "%"}}></div>
+                    <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(3/maxZoom)) + "%"}}></div>
+                    <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(2/maxZoom)) + "%"}}></div>
+                    <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(1/maxZoom)) + "%"}}></div>
+                    <div className={styles.zoomBarCursor} style={{top: cursorPosition}}></div>
                 </div>
 
 
@@ -165,33 +178,37 @@ export default class Application extends PureComponent {
         if (isScrolling == false) this.setState({'zoomamount': 0})
         else {
             let zoomamt  = this.state.zoomamount + (event.wheelDeltaY / 10 )
-            var current = event.clientX / this._getColumnWidth()
-
-            if (zoomamt > 60) {
-
+            var current = this.state.hoveredColumnIndex //event.clientX / this._getColumnWidth()
+            let zoomLevel = this.state.zoomLevel
+            
+            if (zoomLevel == 0 && zoomamt < 0) return;
+            else if (zoomLevel == maxZoom && zoomamt > 0) return;
+            
+            if (zoomamt > 100) {
+                dataIndex = 0; // reset data index for next redraw
                 let start = this.state.list.get(Math.floor(current))
                 let end = this.state.list.get(Math.floor(current) + 1)
-
-
+                let factor = Math.floor((end - start) / zoomFactor);
                 let items = [];
-                for (let i = start; i < (end); i = i + ((end - start) / 100)) {
+                
+                for (let i = start; i < (end); i = i + factor) {
                     items.push(Math.floor(i));
                 }
 
                 const zstack = this.state.zoomStack
                 zstack.push({"start": start, "end": end})
 
-                this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
+                this.setState({"list": Immutable.List(items), zoomStack: zstack, 
+                zoomamount: 0, zoomLevel: this.state.zoomLevel + 1, data:[], lastFactor: factor}, function () {
+                    this.fetchData(start,end,zoomFactor)
 
-                    this.fetchData(start,end,items.length)
-
-                    this._onColumnCountChange((items.length))
+                    this._onColumnCountChange(items.length)
                     this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
                     this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
 
                 }.bind(this))
-            } else if (zoomamt < -60){
-
+            } else if (zoomamt < -100){
+                dataIndex = 0; // reset data index for next redraw
 
                 // let c = this.state.zoomStack[this.state.zoomStack.length - 1]
                 //     zstack.splice(this.state.zoomStack.length - 1,1)
@@ -202,25 +219,25 @@ export default class Application extends PureComponent {
 
                     let start = zstack[zstack.length - 1].start
                     let end = zstack[zstack.length - 1].end
-
-
+                    let factor = Math.floor((end - start) / zoomFactor);
                     let items = [];
-                    for (let i = start; i < (end); i = i + ((end - start) / 100)) {
+                    
+                    for (let i = start; i < (end); i = i + factor) {
                         items.push(Math.floor(i));
                     }
 
-                    this.setState({"list": Immutable.List(items), zoomStack: zstack, zoomamount: 0, data:[]}, function () {
+                    this.setState({"list": Immutable.List(items), zoomStack: zstack, 
+                    zoomamount: 0, zoomLevel: this.state.zoomLevel - 1, data:[], lastFactor: factor}, function () {
+                        this.fetchData(start,end,zoomFactor)
+                        this._computeMajorAxisLabels(start,end,items.length)
 
-                    this.fetchData(start,end,items.length)
-                    this._computeMajorAxisLabels(start,end,items.length)
-
-                        this._onColumnCountChange((items.length))
+                        this._onColumnCountChange(items.length)
                         this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
                         this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 1})
                         this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
                         this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
                         this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
-
+                        
                     }.bind(this))
                 }
             }
@@ -255,7 +272,7 @@ export default class Application extends PureComponent {
     }
 
     _getColumnWidth(){
-        return 15
+        return window.innerWidth / zoomFactor
     }
 
     _getDatum(index) {
@@ -278,17 +295,53 @@ export default class Application extends PureComponent {
         )
     }
 
+    _dataInRange(dataStart, dataEnd, axisIndex) {
+        let axisStart = this.state.list.get(axisIndex);
+        let axisEnd = axisStart + this.state.lastFactor;
+        
+        return (dataStart >= axisStart && dataEnd < axisEnd);
+    }
+
+    _getDataIndex() {
+        return this.state.dataIndex % this.state.list.size;
+    }
+
+    _updateDataIndex() { // async issues
+        this.setState({dataIndex: this.state.dataIndex + 1}, function() {
+            console.log(this.state.dataIndex)
+        }.bind(this));
+    }
+
+    _resetDataIndex() {
+        this.setState({dataIndex: 0});
+    }
+
     _renderDataCell({columnIndex, key, rowIndex, style}) {
 
-
         let label = ""
-        if (this.state.data.length > 0){
-            if (this.state.data[columnIndex]){
-                label = this.state.data[columnIndex]["data"][rowIndex - 2]
-            }
+        let color = ""
+         if (this.state.data.length > 0){
+        //     if (this.state.data[columnIndex]){
+        //         label = this.state.data[columnIndex]["data"][rowIndex - 2]
+        //     }
+        //     if (this.state.data[columnIndex]) {
+                
+                let dataInRange = this._dataInRange(this.state.data[dataIndex]["start"], 
+                                    this.state.data[dataIndex]["end"], columnIndex);
+                if (dataInRange) {
+                    label = this.state.data[dataIndex]["data"][rowIndex - 2];
+                    dataIndex = (dataIndex + 1) % this.state.data.length;
+                    let cellColorScale = calculateColorScale(0, 1, parseInt(label))
+                    color = cellColorScale(label)
+                } else {
+                    label = 0;
+                    color = "#e0e0e0"
+                }
         }
-        let cellColorScale = calculateColorScale(0, 1, parseInt(label))
-        let color = cellColorScale(label)
+            
+        
+
+
 
         // const rowClass = this._getRowClassName(rowIndex)
         // const classNames = cn(rowClass, styles.cell, {
@@ -337,7 +390,6 @@ export default class Application extends PureComponent {
     _renderAxisCell({columnIndex, key, rowIndex, style}) {
 
 
-
         const rowClass = this._getRowClassName(rowIndex)
         const datum = this._getDatum(columnIndex)
 
@@ -384,7 +436,7 @@ export default class Application extends PureComponent {
             label = billions + "." +  hundredMillions + "" + tensMillions  + "B"
         }
 
-
+        
             //Minot Axis : Markers in Millions
 
         if (rowIndex == 1){
@@ -475,11 +527,11 @@ export default class Application extends PureComponent {
         //If next one is changing keep gap of 4//
 
         let items = []
-        for (let i = zoominfo.start; i < (zoominfo.end); i = i + ((zoominfo.end - zoominfo.start) / 25)) {
+        for (let i = start; i < (end); i = i + ((end - start) / zoomFactor)) {
 
             items.push(Math.floor(i));
         }
-
+        items.push(end);
     }
 
 }

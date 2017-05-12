@@ -61,7 +61,6 @@ exports.getRange = function (start, end, factor=1) {
             end = parseInt(end);
             factor = parseInt(factor);
             var aggregateResults = [];
-
             var aggregate = Data.aggregate(
                 [
                     // look for documents with index between start and end
@@ -89,22 +88,24 @@ exports.getRange = function (start, end, factor=1) {
                         console.error(err);
                         reject(err);
                     }
+                    
                     for (var i = 0; i < result.length; i++) { // loop through to format for app.js
                         var obj = new Object();
                         var row = [];
                         var col = result[i];
-
-                        var offset = col._id; // 0, 1, 2, ... based on $index/factor
-
+                        var offset = col._id - (Math.floor(start/factor)); // 0, 1, 2, ... based on $index/factor
                         // generate index range for each aggregate range
                         var startIndex = start + offset * factor;
                         obj.start = (startIndex)
                         obj.end = (startIndex+factor-1)
+                        if (obj.end > end) {
+                            continue;
+                        }
 
                         // generate array of max data values
-                        for (var j = 0; j < col.data.length; j++) {
-                            row.push(col.data[j].values);
-                        }
+                            for (var j = 0; j < col.data.length; j++) {
+                                row.push(col.data[j].values);
+                            }
                         obj.data = row;
 
                         // format [{index: rangeOfValues, data:[values]}, {}, ...]
