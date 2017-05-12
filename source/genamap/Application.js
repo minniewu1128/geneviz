@@ -12,7 +12,7 @@ import axios from 'axios'
 import d3 from 'd3'
 
 const colorRange = ["#990000", "#eeeeee", "#ffffff", "#eeeeee", "#000099"];
-const zoomFactor = 25;
+const zoomFactor = 100;
 // (3088286401-1 / largestIndex^zoomFactor) > 0
 const maxZoom = 5;
 let dataIndex = 0;
@@ -119,9 +119,9 @@ export default class Application extends PureComponent {
         
         let cursorPosition;
         if (this.state.zoomamount > 0) {
-            cursorPosition =  Math.min(100, ((99 - (100*(this.state.zoomLevel / maxZoom))) -  (this.state.zoomamount*0.3))) + "%";
+            cursorPosition =  Math.min(100, ((99 - (100*(this.state.zoomLevel / maxZoom))) -  (this.state.zoomamount*0.2))) + "%";
         } else {
-            cursorPosition =  Math.max(0, (99 - (100*(this.state.zoomLevel / maxZoom))) -  (this.state.zoomamount*0.3)) + "%";
+            cursorPosition =  Math.max(0, (99 - (100*(this.state.zoomLevel / maxZoom))) -  (this.state.zoomamount*0.2)) + "%";
         }
 
         return (
