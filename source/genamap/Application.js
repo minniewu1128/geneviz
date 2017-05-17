@@ -26,7 +26,9 @@ const zoomFactor = 100;
 // maxZoom = (3088286401-1 / largestIndex^zoomFactor) > 0
 // maxZoom: defines the total number of zoom levels
 const maxZoom = 4;
+const yAxisCellSize = 1;
 let dataIndex = 0;
+
 
 //TODO : Remove d3 deps
 const calculateColorScale = (min, max, threshold) => {
@@ -79,7 +81,8 @@ export default class Application extends PureComponent {
         this._onRowCountChange = this._onRowCountChange.bind(this)
         this._onScrollToColumnChange = this._onScrollToColumnChange.bind(this)
         this._onScrollToRowChange = this._onScrollToRowChange.bind(this)
-        this._renderAxisCell = this._renderAxisCell.bind(this)
+        this._renderXAxisCell = this._renderXAxisCell.bind(this)
+        this._renderYAxisCell = this._renderYAxisCell.bind(this)
         this._renderDataCell = this._renderDataCell.bind(this)
         this._renderLeftSideCell = this._renderLeftSideCell.bind(this)
         this._getDatum = this._getDatum.bind(this)
@@ -89,6 +92,7 @@ export default class Application extends PureComponent {
         this._updateDataIndex = this._updateDataIndex.bind(this)
         this._resetDataIndex = this._resetDataIndex.bind(this)
         this._setGridRef = this._setGridRef.bind(this)
+        this._getYLabel = this._getYLabel.bind(this)
     }
 
     componentWillMount(){
@@ -131,7 +135,6 @@ export default class Application extends PureComponent {
         return (
             <div>
                 <div className={styles.zoomBar} >
-                    <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(5/maxZoom)) + "%"}}></div>
                     <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(4/maxZoom)) + "%"}}></div>
                     <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(3/maxZoom)) + "%"}}></div>
                     <div className={styles.zoomBarCursorMarker} style={{top: 100 - (100*(2/maxZoom)) + "%"}}></div>
@@ -274,11 +277,17 @@ export default class Application extends PureComponent {
 
 
     _cellRenderer({columnIndex, key, rowIndex, style}) {
-
-         if (rowIndex <= 1){
-             return this._renderAxisCell({columnIndex, key, rowIndex, style})
-
+        
+         if (rowIndex <= 1 && columnIndex > yAxisCellSize - 1) {
+             columnIndex -= yAxisCellSize
+             return this._renderXAxisCell({columnIndex, key, rowIndex, style})
          }
+
+         if (columnIndex < yAxisCellSize && rowIndex > 1) {
+             return this._renderYAxisCell({columnIndex, key, rowIndex, style})
+         }
+
+        columnIndex -= yAxisCellSize
         return this._renderDataCell({columnIndex, key, rowIndex, style})
     }
 
@@ -289,6 +298,7 @@ export default class Application extends PureComponent {
     _getDatum(index) {
         return this.state.list.get(index % this.state.list.size)
     }
+
 
     _getRowClassName(row) {
         return row % 2 === 0 ? styles.evenRow : styles.oddRow
@@ -307,8 +317,12 @@ export default class Application extends PureComponent {
         return (dataStart >= axisStart && dataEnd < axisEnd);
     }
 
+    _getYLabel(rowIndex) { // TODO: Add reference to return a trait number from DB
+        return rowIndex.toString()
+    }
+
     _getDataIndex() {
-        return this.state.dataIndex % this.state.list.size;
+        return this.state.dataIndex % (this.state.list.size - 1);
     }
 
     _updateDataIndex() { // async issues
@@ -335,7 +349,7 @@ export default class Application extends PureComponent {
                                     this.state.data[dataIndex]["end"], columnIndex);
                 if (dataInRange) {
                     label = this.state.data[dataIndex]["data"][rowIndex - 2];
-                    dataIndex = (dataIndex + 1) % this.state.data.length;
+                    dataIndex = (dataIndex + 1) % (this.state.data.length-yAxisCellSize);
                     let cellColorScale = calculateColorScale(0, 1, parseInt(label))
                     color = cellColorScale(label)
                 } else {
@@ -395,9 +409,9 @@ export default class Application extends PureComponent {
         // )
     }
 
-    _renderAxisCell({columnIndex, key, rowIndex, style}) {
+    _renderXAxisCell({columnIndex, key, rowIndex, style}) {
 
-
+        
         const rowClass = this._getRowClassName(rowIndex)
         const datum = this._getDatum(columnIndex)
 
@@ -408,7 +422,7 @@ export default class Application extends PureComponent {
 
         style = {
             ...style,
-             fontSize: "x-small",
+             //fontSize: "x-small",
         }
 
         //Format based on length of number
@@ -463,6 +477,28 @@ export default class Application extends PureComponent {
         return (
             <div
                 className={classNames}
+                key={key}
+                style={style}
+            >
+                {label}
+            </div>
+        )
+    }
+
+    _renderYAxisCell({columnIndex, key, rowIndex, style}) {
+
+        style = {
+            ...style
+        }
+
+       let label = "" 
+
+       if (columnIndex == 0) {
+           label = this._getYLabel(rowIndex);
+       }
+
+        return (
+            <div
                 key={key}
                 style={style}
             >
