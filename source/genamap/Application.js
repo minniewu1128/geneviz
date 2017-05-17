@@ -12,9 +12,12 @@ import axios from 'axios'
 import d3 from 'd3'
 
 const colorRange = ["#990000", "#eeeeee", "#ffffff", "#eeeeee", "#000099"];
+
+// zoomFactor: defines the aggregate factor for the cells
 const zoomFactor = 100;
-// (3088286401-1 / largestIndex^zoomFactor) > 0
-const maxZoom = 5;
+// maxZoom = (3088286401-1 / largestIndex^zoomFactor) > 0
+// maxZoom: defines the total number of zoom levels
+const maxZoom = 4;
 let dataIndex = 0;
 
 const calculateColorScale = (min, max, threshold) => {
@@ -186,27 +189,30 @@ export default class Application extends PureComponent {
             
             if (zoomamt > 100) {
                 dataIndex = 0; // reset data index for next redraw
-                let start = this.state.list.get(Math.floor(current))
-                let end = this.state.list.get(Math.floor(current) + 1)
+                let start = this.state.list.get(Math.max(0, Math.floor(current) - 1))
+                let end = this.state.list.get(Math.min(this.state.list.size-1, Math.floor(current) + 2))
                 let factor = Math.floor((end - start) / zoomFactor);
                 let items = [];
                 
-                for (let i = start; i < (end); i = i + factor) {
-                    items.push(Math.floor(i));
+                if (factor > 0) {
+                    for (let i = start; i < (end); i = i + factor) {
+                        items.push(Math.floor(i));
+                    }
+
+                    const zstack = this.state.zoomStack
+                    zstack.push({"start": start, "end": end})
+
+                    this.setState({"list": Immutable.List(items), zoomStack: zstack, 
+                    zoomamount: 0, zoomLevel: this.state.zoomLevel + 1, data:[], lastFactor: factor}, function () {
+                        this.fetchData(start,end,zoomFactor)
+
+                        this._onColumnCountChange(items.length)
+                        this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
+                        this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
+
+                    }.bind(this))
                 }
-
-                const zstack = this.state.zoomStack
-                zstack.push({"start": start, "end": end})
-
-                this.setState({"list": Immutable.List(items), zoomStack: zstack, 
-                zoomamount: 0, zoomLevel: this.state.zoomLevel + 1, data:[], lastFactor: factor}, function () {
-                    this.fetchData(start,end,zoomFactor)
-
-                    this._onColumnCountChange(items.length)
-                    this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 1})
-
-                }.bind(this))
+                
             } else if (zoomamt < -100){
                 dataIndex = 0; // reset data index for next redraw
 
@@ -219,9 +225,9 @@ export default class Application extends PureComponent {
 
                     let start = zstack[zstack.length - 1].start
                     let end = zstack[zstack.length - 1].end
-                    let factor = Math.floor((end - start) / zoomFactor);
+                    let factor = Math.max(1, Math.floor((end - start) / zoomFactor));
                     let items = [];
-                    
+
                     for (let i = start; i < (end); i = i + factor) {
                         items.push(Math.floor(i));
                     }
