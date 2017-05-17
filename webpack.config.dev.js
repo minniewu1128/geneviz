@@ -3,7 +3,7 @@ const path = require('path')
 const webpack = require('webpack')
 
 const config = {
-  devtool: 'eval',
+  devtool: 'eval-source-map',
   entry: {
     demo: './source/genamap/index'
   },
@@ -18,7 +18,6 @@ const config = {
       template: './index.html'
     }),
     new webpack.NoErrorsPlugin(),
-    new webpack.optimize.UglifyJsPlugin()
   ],
   module: {
     loaders: [

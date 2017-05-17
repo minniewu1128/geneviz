@@ -8,7 +8,7 @@ import AutoSizer from '../AutoSizer'
 import CustomWindowScroller from '../CustomWindowScroller'
 import createCellPositioner from '../Masonry/createCellPositioner'
 import Masonry from '../Masonry'
-import styles from './axis.css'
+import styles from './styles.css'
 
 let intial =   [143478261,
     286956522,

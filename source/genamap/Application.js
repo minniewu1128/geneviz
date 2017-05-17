@@ -1,16 +1,24 @@
 
 import Immutable from 'immutable'
 import React, { PropTypes, PureComponent } from 'react'
-import { ContentBox, ContentBoxHeader, ContentBoxParagraph } from '../demo/ContentBox'
-import { LabeledInput, InputRow } from '../demo/LabeledInput'
-import AutoSizer from '../AutoSizer'
-import Grid from '../Grid'
 import CustomWindowScroller from '../CustomWindowScroller'
 import cn from 'classnames'
-import styles from './axis.css'
+import styles from './styles.css'
 import axios from 'axios'
 import d3 from 'd3'
+import AutoSizer from 'react-virtualized/dist/commonjs/AutoSizer'
+import Grid from 'react-virtualized/dist/commonjs/Grid'
 
+/*
+TODO LIST
+- Axis ( Make the major and minor axis
+- Investegate css render delay problem
+- Integrate into genamap
+- Auto resize width
+- Make it look prettier
+
+
+ */
 const colorRange = ["#990000", "#eeeeee", "#ffffff", "#eeeeee", "#000099"];
 
 // zoomFactor: defines the aggregate factor for the cells
@@ -20,6 +28,7 @@ const zoomFactor = 100;
 const maxZoom = 4;
 let dataIndex = 0;
 
+//TODO : Remove d3 deps
 const calculateColorScale = (min, max, threshold) => {
     const mid = (min + max) / 2
     //find the range in which colors can be muted, as a percentage of data range
@@ -66,7 +75,6 @@ export default class Application extends PureComponent {
         this._getColumnWidth = this._getColumnWidth.bind(this)
         // this._getRowClassName = this._getRowClassName.bind(this)
         // this._getRowHeight = this._getRowHeight.bind(this)
-        this._noContentRenderer = this._noContentRenderer.bind(this)
         this._onColumnCountChange = this._onColumnCountChange.bind(this)
         this._onRowCountChange = this._onRowCountChange.bind(this)
         this._onScrollToColumnChange = this._onScrollToColumnChange.bind(this)
@@ -80,29 +88,22 @@ export default class Application extends PureComponent {
         this._getDataIndex = this._getDataIndex.bind(this)
         this._updateDataIndex = this._updateDataIndex.bind(this)
         this._resetDataIndex = this._resetDataIndex.bind(this)
-        this._on
+        this._setGridRef = this._setGridRef.bind(this)
     }
 
-    componentDidMount(){
+    componentWillMount(){
+        //TODO: Put into config
         this.fetchData(1,3088286401,zoomFactor)
     }
 
     fetchData(start,end,steps){
-
+        //TODO: Put in config
         let url = "http://localhost:3001/data/?start=" + start + "&end=" + end + "&zoom=" + Math.floor((end-start)/steps)
         console.log(url)
         axios.get(url)
             .then((res) => {
-                console.log(res)
-
-                //this.setState({ data: res.data , list:Immutable.List(items),},function(){
                 this.setState({ data: res.data },function(){
-                    this.axis.recomputeGridSize({columnIndex: 0, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 1, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 2, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 3, rowIndex: 0})
-                    this.axis.recomputeGridSize({columnIndex: 4, rowIndex: 0})
-
+                       this.axis.forceUpdate()
                 }.bind(this));
             });
     }
@@ -142,16 +143,17 @@ export default class Application extends PureComponent {
                 <div className={styles.CustomWindowScrollerWrapper}>
                     <CustomWindowScroller onScroll={this._updateZoom.bind(this)}>
                         {({ height, isScrolling, scrollTop }) => (
+
+
                             <AutoSizer disableHeight>
                                 {({width}) => (
                                     <Grid
-                                        ref={(input) => { this.axis = input}}
+                                        ref={this._setGridRef}
                                         cellRenderer={this._cellRenderer}
                                         columnWidth={this._getColumnWidth}
                                         columnCount={columnCount}
                                         height={height}
                                         width={width}
-                                        noContentRenderer={this._noContentRenderer}
                                         overscanColumnCount={overscanColumnCount}
                                         overscanRowCount={overscanRowCount}
                                         rowHeight={
@@ -177,6 +179,10 @@ export default class Application extends PureComponent {
         this._windowScroller = windowScroller
     }
 
+    _setGridRef(grid){
+        this.axis = grid
+    }
+
     _updateZoom({event, isScrolling}) {
         if (isScrolling == false) this.setState({'zoomamount': 0})
         else {
@@ -193,7 +199,7 @@ export default class Application extends PureComponent {
                 let end = this.state.list.get(Math.min(this.state.list.size-1, Math.floor(current) + 2))
                 let factor = Math.floor((end - start) / zoomFactor);
                 let items = [];
-                
+
                 if (factor > 0) {
                     for (let i = start; i < (end); i = i + factor) {
                         items.push(Math.floor(i));
@@ -274,7 +280,6 @@ export default class Application extends PureComponent {
 
          }
         return this._renderDataCell({columnIndex, key, rowIndex, style})
-
     }
 
     _getColumnWidth(){
@@ -293,13 +298,7 @@ export default class Application extends PureComponent {
     //     return this._getDatum(index).bind(this).size
     // }
 
-    _noContentRenderer() {
-        return (
-            <div className={styles.noCells}>
-                No cells
-            </div>
-        )
-    }
+
 
     _dataInRange(dataStart, dataEnd, axisIndex) {
         let axisStart = this.state.list.get(axisIndex);
@@ -326,7 +325,7 @@ export default class Application extends PureComponent {
 
         let label = ""
         let color = ""
-         if (this.state.data.length > 0){
+        if (this.state.data.length > 0){
         //     if (this.state.data[columnIndex]){
         //         label = this.state.data[columnIndex]["data"][rowIndex - 2]
         //     }
@@ -341,18 +340,27 @@ export default class Application extends PureComponent {
                     color = cellColorScale(label)
                 } else {
                     label = 0;
-                    color = "#e0e0e0"
+                    //color = "#e0e0e0"
                 }
         }
             
-        
-
-
 
         // const rowClass = this._getRowClassName(rowIndex)
         // const classNames = cn(rowClass, styles.cell, {
         //     [styles.centeredCell]: columnIndex > 1
         // })
+
+
+
+        var grid = this.axis
+
+
+        var setState = this.setState.bind(this)
+        var cname = styles.cell
+        if (columnIndex == this.state.hoveredColumnIndex){
+            color = "rgba(100, 0, 0, 0.25)"
+            cname = styles.hoveredItem
+        }
 
         style = {
             ...style,
@@ -360,23 +368,17 @@ export default class Application extends PureComponent {
         }
 
 
-        var grid = this.axis
-        //
-        var className = columnIndex === this.state.hoveredColumnIndex || rowIndex === this.state.hoveredRowIndex
-            ? 'cell hoveredItem'
-            : 'cell'
-        var setState = this.setState.bind(this)
-
-
         return React.DOM.div({
-            className: className,
+            className: cname,
             key: key,
             onMouseOver: function () {
                 setState({
                     hoveredColumnIndex: columnIndex,
                     hoveredRowIndex: rowIndex
                 })
-                //grid.forceUpdate()
+                if(grid){
+                    grid.recomputeGridSize({columnIndex: columnIndex, rowIndex: rowIndex})
+                }
             },
             style: style
         })
@@ -406,10 +408,7 @@ export default class Application extends PureComponent {
 
         style = {
             ...style,
-            fontSize: "x-small",
-            backgroundColor:"#e0e0e0",
-            overflow: "visible",
-            cursor: "move"
+             fontSize: "x-small",
         }
 
         //Format based on length of number
